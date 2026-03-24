@@ -72,17 +72,34 @@ const setCacheEntry = (key: string, value: string, ttlMs: number): void => {
 export const isEntryFresh = (entry: CacheEntry): boolean => entry.expiresAt > Date.now();
 
 /**
- * Build a proxied URL from a CORS proxy base and a target URL.
- * The proxy base can be provided in any format — the function normalizes it
- * and constructs `{base}/?url={encodedTarget}`.
- *
- * Returns the target URL unchanged when no proxy is provided.
+ * System-level CORS proxy URL read from the `VITE_CORS_PROXY_URL` environment
+ * variable at build time.  When the variable is not set the proxy is simply
+ * skipped and requests go directly to the target URL.
  */
-export function buildProxyUrl(corsProxy: string | undefined, targetUrl: string): string {
-  if (!corsProxy) return targetUrl;
+const SYSTEM_CORS_PROXY: string | undefined =
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_CORS_PROXY_URL as string) || undefined;
 
-  // Normalize: strip trailing /, ?, and any partial ?url= the user may have typed
-  const base = corsProxy.replace(/\/?\??(?:url=)?$/i, '');
+/**
+ * Return the currently configured system CORS-proxy URL (if any).
+ * Useful for widgets that need to check whether a proxy is available
+ * before deciding to fetch or show placeholder data.
+ */
+export function getCorsProxyUrl(): string | undefined {
+  return SYSTEM_CORS_PROXY;
+}
+
+/**
+ * Build a proxied URL for a target URL.
+ *
+ * Uses the system CORS proxy (`VITE_CORS_PROXY_URL`) automatically.
+ * Returns the target URL unchanged when no proxy is configured.
+ */
+export function buildProxyUrl(targetUrl: string): string {
+  const proxy = SYSTEM_CORS_PROXY;
+  if (!proxy) return targetUrl;
+
+  // Normalize: strip trailing /, ?, and any partial ?url= the operator may have set
+  const base = proxy.replace(/\/?\??(?:url=)?$/i, '');
   return `${base}/?url=${encodeURIComponent(targetUrl)}`;
 }
 

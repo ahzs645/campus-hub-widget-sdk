@@ -18,6 +18,7 @@ export {
   fetchTextWithCache,
   buildCacheKey,
   buildProxyUrl,
+  getCorsProxyUrl,
   isEntryFresh,
   type CacheEntry,
   type FetchCacheOptions,
@@ -32,7 +33,7 @@ export {
 
 // === Hooks ===
 export { useFitScale, useAdaptiveFitScale } from './hooks/useFitScale';
-export { useEvents, applyCorsProxy, formatDate, formatTime, type CalendarEvent, type UseEventsOptions } from './hooks/useEvents';
+export { useEvents, formatDate, formatTime, type CalendarEvent, type UseEventsOptions } from './hooks/useEvents';
 
 // === Icon Names ===
 export type { IconName } from './lib/icon-names';

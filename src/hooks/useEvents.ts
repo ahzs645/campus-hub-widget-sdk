@@ -18,17 +18,12 @@ export interface CalendarEvent {
 export interface UseEventsOptions {
   apiUrl?: string;
   sourceType?: 'json' | 'ical' | 'rss';
-  corsProxy?: string;
   cacheTtlSeconds?: number;
   maxItems?: number;
   pollIntervalMs?: number;
   defaultEvents?: CalendarEvent[];
   selectedCategories?: string[];
 }
-
-export const applyCorsProxy = (url: string, corsProxy?: string) => {
-  return buildProxyUrl(corsProxy, url);
-};
 
 export const formatDate = (value: Date | null): string => {
   if (!value) return '';
@@ -44,15 +39,12 @@ export function useEvents(options: UseEventsOptions): CalendarEvent[] {
   const {
     apiUrl,
     sourceType = 'json',
-    corsProxy,
     cacheTtlSeconds = 300,
     maxItems = 10,
     pollIntervalMs = 30_000,
     defaultEvents = [],
     selectedCategories,
   } = options;
-
-  const trimmedProxy = corsProxy?.trim();
 
   const [events, setEvents] = useState<CalendarEvent[]>(defaultEvents);
 
@@ -70,7 +62,7 @@ export function useEvents(options: UseEventsOptions): CalendarEvent[] {
 
     const fetchEvents = async () => {
       try {
-        const fetchUrl = applyCorsProxy(apiUrl, trimmedProxy);
+        const fetchUrl = buildProxyUrl(apiUrl);
 
         if (sourceType === 'ical') {
           const { text } = await fetchTextWithCache(fetchUrl, {
@@ -161,7 +153,7 @@ export function useEvents(options: UseEventsOptions): CalendarEvent[] {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [apiUrl, sourceType, trimmedProxy, cacheTtlSeconds, maxItems, pollIntervalMs, selectedCategories]);
+  }, [apiUrl, sourceType, cacheTtlSeconds, maxItems, pollIntervalMs, selectedCategories]);
 
   return events;
 }
