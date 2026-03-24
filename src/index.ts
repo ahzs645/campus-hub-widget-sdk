@@ -45,3 +45,13 @@ export { default as FormInput } from './components/ui/FormInput';
 export { default as FormSelect } from './components/ui/FormSelect';
 export { default as FormSwitch } from './components/ui/FormSwitch';
 export { default as FormStepper } from './components/ui/FormStepper';
+
+// === Display Widget Components ===
+export { DISPLAY_WIDGET_COMPONENTS, preloadDisplayWidgetComponent } from './lib/display-widget-components';
+
+// === Dot Matrix ===
+export { DotMatrixText, textToChars, FONT, type DotChar } from './lib/dot-matrix';
+
+// === Signaling (stub types — real implementation loaded dynamically by widgets that need it) ===
+export type { SignalingClient, SignalingConfig } from '@firstform/campus-hub-engine/src/lib/signaling-client';
+export { createSignalingClient } from '@firstform/campus-hub-engine/src/lib/signaling-client';
