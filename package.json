@@ -1,0 +1,22 @@
+{
+  "name": "@firstform/campus-hub-widget-sdk",
+  "version": "0.1.0",
+  "description": "SDK for building Campus Hub widgets — types, hooks, utilities, and UI components",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./src/*": "./src/*"
+  },
+  "files": ["src"],
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "lucide-react": ">=0.400.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.8",
+    "typescript": "^5.7.2"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,47 @@
+// === Widget Registry ===
+export {
+  registerWidget,
+  getWidget,
+  getAllWidgets,
+  getWidgetComponent,
+  registerWidgetLoader,
+  getWidgetLoader,
+  getAllWidgetLoaders,
+  type WidgetDefinition,
+  type WidgetComponentProps,
+  type WidgetOptionsProps,
+} from './lib/widget-registry';
+
+// === Data Utilities ===
+export {
+  fetchJsonWithCache,
+  fetchTextWithCache,
+  buildCacheKey,
+  buildProxyUrl,
+  isEntryFresh,
+  type CacheEntry,
+  type FetchCacheOptions,
+} from './lib/data-cache';
+
+export {
+  parseICal,
+  parseRss,
+  type RssItem,
+  type ICalEvent,
+} from './lib/feeds';
+
+// === Hooks ===
+export { useFitScale, useAdaptiveFitScale } from './hooks/useFitScale';
+export { useEvents, applyCorsProxy, formatDate, formatTime, type CalendarEvent, type UseEventsOptions } from './hooks/useEvents';
+
+// === Icon Names ===
+export type { IconName } from './lib/icon-names';
+
+// === Components ===
+export { default as AppIcon } from './components/AppIcon';
+
+// === UI Form Components ===
+export { default as FormInput } from './components/ui/FormInput';
+export { default as FormSelect } from './components/ui/FormSelect';
+export { default as FormSwitch } from './components/ui/FormSwitch';
+export { default as FormStepper } from './components/ui/FormStepper';
