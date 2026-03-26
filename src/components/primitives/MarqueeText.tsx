@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useRef, CSSProperties } from 'react';
 
 interface MarqueeTextProps {
