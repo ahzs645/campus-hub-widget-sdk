@@ -47,6 +47,21 @@ export { default as FormSelect } from './components/ui/FormSelect';
 export { default as FormSwitch } from './components/ui/FormSwitch';
 export { default as FormStepper } from './components/ui/FormStepper';
 
+// === Primitives (reusable themed UI building blocks for widgets) ===
+export {
+  ThemedContainer,
+  ThemedText,
+  ThemedCard,
+  Badge,
+  ProgressBar,
+  DotIndicator,
+  SectionHeader,
+  ScrollableList,
+  PulsingDot,
+  IconText,
+  type WidgetTheme,
+} from './components/primitives';
+
 // === Display Widget Components ===
 export { DISPLAY_WIDGET_COMPONENTS, preloadDisplayWidgetComponent } from './lib/display-widget-components';
 
