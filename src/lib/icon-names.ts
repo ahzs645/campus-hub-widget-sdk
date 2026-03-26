@@ -51,4 +51,8 @@ export type IconName =
   | 'calendarRange'
   | 'wifi'
   | 'info'
-  | 'database';
+  | 'database'
+  | 'sunrise'
+  | 'sunset'
+  | 'camera'
+  | 'mapPin';

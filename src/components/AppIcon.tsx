@@ -51,6 +51,10 @@ import {
   Wifi,
   Info,
   Database,
+  Sunrise,
+  Sunset,
+  Camera,
+  MapPin,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { IconName } from '../lib/icon-names';
@@ -116,6 +120,10 @@ const ICONS: Record<IconName, LucideIcon> = {
   wifi: Wifi,
   info: Info,
   database: Database,
+  sunrise: Sunrise,
+  sunset: Sunset,
+  camera: Camera,
+  mapPin: MapPin,
 };
 
 export default function AppIcon({
@@ -125,6 +133,9 @@ export default function AppIcon({
   title,
 }: AppIconProps) {
   const IconComponent = ICONS[name];
+  if (!IconComponent) {
+    return <Puzzle className={className} strokeWidth={strokeWidth} aria-hidden />;
+  }
   const accessibilityProps: Pick<ComponentProps<'svg'>, 'aria-hidden' | 'aria-label'> = title
     ? { 'aria-label': title }
     : { 'aria-hidden': true };
