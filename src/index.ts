@@ -31,8 +31,29 @@ export {
   type ICalEvent,
 } from './lib/feeds';
 
+export {
+  fetchFormattedRss,
+  fetchRemoteFeed,
+  type RssFormatter,
+  type FormattedRssContent,
+  type RemoteFeedItem,
+  type RemoteFeedResult,
+} from './lib/feed-sources';
+
+// === Video Utilities ===
+export {
+  detectVideoSource,
+  extractVideoId as extractVideoIdFromUrl,
+  getVideoThumbnailUrl,
+  fetchOEmbed,
+  type VideoSource,
+  type VideoMeta,
+} from './lib/video-utils';
+
 // === Hooks ===
 export { useFitScale, useAdaptiveFitScale } from './hooks/useFitScale';
+export { useTextResize } from './hooks/useTextResize';
+export { useWakeLock } from './hooks/useWakeLock';
 export { useEvents, formatDate, formatTime, type CalendarEvent, type UseEventsOptions } from './hooks/useEvents';
 
 // === Icon Names ===
@@ -59,6 +80,15 @@ export {
   ScrollableList,
   PulsingDot,
   IconText,
+  OptionsPanel,
+  OptionsSection,
+  OptionsPreview,
+  PillIndicator,
+  MarqueeText,
+  DarkContainer,
+  FadeOverlay,
+  Skeleton,
+  StatDisplay,
   type WidgetTheme,
 } from './components/primitives';
 
