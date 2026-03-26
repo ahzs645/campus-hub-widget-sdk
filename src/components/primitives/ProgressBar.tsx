@@ -1,3 +1,5 @@
+'use client';
+
 import { CSSProperties, useRef } from 'react';
 import type { WidgetTheme } from './ThemedContainer';
 
