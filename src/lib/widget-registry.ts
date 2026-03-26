@@ -17,7 +17,7 @@ export interface WidgetOptionsProps {
   onChange: (newData: Record<string, unknown>) => void;
 }
 
-export type SourceType = 'image' | 'video' | 'embed' | 'feed' | 'document';
+export type SourceType = 'image' | 'video' | 'embed' | 'feed' | 'document' | 'calendar';
 
 export interface SourceBinding {
   /** Which prop receives the source URL (e.g. 'url', 'feedUrl') */
