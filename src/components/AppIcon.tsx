@@ -48,6 +48,9 @@ import {
   Table,
   Type,
   CalendarRange,
+  Wifi,
+  Info,
+  Database,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { IconName } from '../lib/icon-names';
@@ -110,6 +113,9 @@ const ICONS: Record<IconName, LucideIcon> = {
   table: Table,
   type: Type,
   calendarRange: CalendarRange,
+  wifi: Wifi,
+  info: Info,
+  database: Database,
 };
 
 export default function AppIcon({

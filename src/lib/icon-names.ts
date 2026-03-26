@@ -48,4 +48,7 @@ export type IconName =
   | 'rss'
   | 'table'
   | 'type'
-  | 'calendarRange';
+  | 'calendarRange'
+  | 'wifi'
+  | 'info'
+  | 'database';

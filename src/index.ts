@@ -10,6 +10,8 @@ export {
   type WidgetDefinition,
   type WidgetComponentProps,
   type WidgetOptionsProps,
+  type SourceType,
+  type SourceBinding,
 } from './lib/widget-registry';
 
 // === Data Utilities ===

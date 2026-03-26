@@ -17,6 +17,17 @@ export interface WidgetOptionsProps {
   onChange: (newData: Record<string, unknown>) => void;
 }
 
+export type SourceType = 'image' | 'video' | 'embed' | 'feed' | 'document';
+
+export interface SourceBinding {
+  /** Which prop receives the source URL (e.g. 'url', 'feedUrl') */
+  propName: string;
+  /** Accepted source types */
+  types: SourceType[];
+  /** Whether this prop accepts multiple sources (e.g. slideshow slides) */
+  multiple?: boolean;
+}
+
 export interface WidgetDefinition {
   type: string;
   name: string;
@@ -32,6 +43,8 @@ export interface WidgetDefinition {
   component: ComponentType<WidgetComponentProps>;
   OptionsComponent?: ComponentType<WidgetOptionsProps>;
   defaultProps?: Record<string, unknown>;
+  /** Source types this widget can consume. Omit = no source picker shown. */
+  acceptsSources?: SourceBinding[];
 }
 
 // Widget registry - widgets register themselves here

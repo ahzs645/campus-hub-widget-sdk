@@ -64,3 +64,7 @@ registerWidgetLoader('my-widget', () => import('./MyWidget'));
 ### UI Components
 - `AppIcon` — Icon component using lucide-react
 - `FormInput`, `FormSelect`, `FormSwitch`, `FormStepper` — Form components for widget option panels
+
+### Primitives
+
+Reusable, themed UI building blocks for widget components. All are optional — widgets can still use raw elements when they need custom behavior. See [`docs/widget-primitives.md`](../../docs/widget-primitives.md) for full documentation with examples.
