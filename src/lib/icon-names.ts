@@ -55,4 +55,10 @@ export type IconName =
   | 'sunrise'
   | 'sunset'
   | 'camera'
-  | 'mapPin';
+  | 'mapPin'
+  | 'brandYoutube'
+  | 'brandCanva'
+  | 'brandGoogle'
+  | 'brandGoogleCalendar'
+  | 'brandGoogleSheets'
+  | 'brandHomeAssistant';
