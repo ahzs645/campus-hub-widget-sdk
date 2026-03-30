@@ -62,6 +62,7 @@ import type { IconName } from '../lib/icon-names';
 interface AppIconProps {
   name: IconName;
   className?: string;
+  size?: number;
   strokeWidth?: number;
   title?: string;
 }
@@ -191,6 +192,7 @@ const BRAND_ICONS: Partial<Record<IconName, (props: { className?: string; title?
 export default function AppIcon({
   name,
   className,
+  size,
   strokeWidth = 1.8,
   title,
 }: AppIconProps) {
@@ -202,7 +204,7 @@ export default function AppIcon({
 
   const IconComponent = ICONS[name];
   if (!IconComponent) {
-    return <Puzzle className={className} strokeWidth={strokeWidth} aria-hidden />;
+    return <Puzzle className={className} size={size} strokeWidth={strokeWidth} aria-hidden />;
   }
   const accessibilityProps: Pick<ComponentProps<'svg'>, 'aria-hidden' | 'aria-label'> = title
     ? { 'aria-label': title }
@@ -211,6 +213,7 @@ export default function AppIcon({
   return (
     <IconComponent
       className={className}
+      size={size}
       strokeWidth={strokeWidth}
       {...accessibilityProps}
     />
