@@ -53,6 +53,8 @@ export interface SourceBinding {
   types: SourceType[];
   /** Whether this prop accepts multiple sources (e.g. slideshow slides) */
   multiple?: boolean;
+  /** Optional source filter for narrowing picker results. */
+  matchSource?: (source: LinkedSource) => boolean;
   /** Optional widget-specific mapping when linking a source. */
   applySource?: (
     source: LinkedSource,
