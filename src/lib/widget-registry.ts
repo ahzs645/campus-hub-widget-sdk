@@ -17,6 +17,8 @@ export interface WidgetOptionsProps {
   onChange: (newData: Record<string, unknown>) => void;
 }
 
+export type WidgetDefaultPropsFactory = () => Record<string, unknown>;
+
 export type SourceType =
   | 'api'
   | 'image'
@@ -78,6 +80,7 @@ export interface WidgetDefinition {
   component: ComponentType<WidgetComponentProps>;
   OptionsComponent?: ComponentType<WidgetOptionsProps>;
   defaultProps?: Record<string, unknown>;
+  createDefaultProps?: WidgetDefaultPropsFactory;
   /** Source types this widget can consume. Omit = no source picker shown. */
   acceptsSources?: SourceBinding[];
 }
@@ -95,6 +98,15 @@ export function getWidget(type: string): WidgetDefinition | undefined {
 
 export function getAllWidgets(): WidgetDefinition[] {
   return Array.from(registry.values());
+}
+
+export function buildWidgetInitialProps(
+  definition: Pick<WidgetDefinition, 'defaultProps' | 'createDefaultProps'>,
+): Record<string, unknown> {
+  return {
+    ...(definition.defaultProps ?? {}),
+    ...(definition.createDefaultProps?.() ?? {}),
+  };
 }
 
 export function getWidgetComponent(type: string): ComponentType<WidgetComponentProps> | null {

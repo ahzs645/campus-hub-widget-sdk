@@ -23,6 +23,7 @@ export interface UseEventsOptions {
   pollIntervalMs?: number;
   defaultEvents?: CalendarEvent[];
   selectedCategories?: string[];
+  useCorsProxy?: boolean;
 }
 
 export const formatDate = (value: Date | null): string => {
@@ -44,6 +45,7 @@ export function useEvents(options: UseEventsOptions): CalendarEvent[] {
     pollIntervalMs = 30_000,
     defaultEvents = [],
     selectedCategories,
+    useCorsProxy = true,
   } = options;
 
   const [events, setEvents] = useState<CalendarEvent[]>(defaultEvents);
@@ -62,7 +64,7 @@ export function useEvents(options: UseEventsOptions): CalendarEvent[] {
 
     const fetchEvents = async () => {
       try {
-        const fetchUrl = buildProxyUrl(apiUrl);
+        const fetchUrl = useCorsProxy ? buildProxyUrl(apiUrl) : apiUrl;
 
         if (sourceType === 'ical') {
           const { text } = await fetchTextWithCache(fetchUrl, {
@@ -153,7 +155,7 @@ export function useEvents(options: UseEventsOptions): CalendarEvent[] {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [apiUrl, sourceType, cacheTtlSeconds, maxItems, pollIntervalMs, selectedCategories]);
+  }, [apiUrl, sourceType, cacheTtlSeconds, maxItems, pollIntervalMs, selectedCategories, useCorsProxy]);
 
   return events;
 }
