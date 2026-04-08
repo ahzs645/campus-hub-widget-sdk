@@ -18,6 +18,7 @@ export interface WidgetOptionsProps {
 }
 
 export type SourceType =
+  | 'api'
   | 'image'
   | 'video'
   | 'embed'
@@ -34,6 +35,17 @@ export type SourceType =
   | 'unsplash'
   | 'vimeo';
 
+export interface LinkedSource {
+  _id: string;
+  name: string;
+  url: string;
+  sourceType: SourceType;
+  description?: string;
+  metadata?: {
+    provider?: string;
+  };
+}
+
 export interface SourceBinding {
   /** Which prop receives the source URL (e.g. 'url', 'feedUrl') */
   propName: string;
@@ -41,6 +53,11 @@ export interface SourceBinding {
   types: SourceType[];
   /** Whether this prop accepts multiple sources (e.g. slideshow slides) */
   multiple?: boolean;
+  /** Optional widget-specific mapping when linking a source. */
+  applySource?: (
+    source: LinkedSource,
+    currentData: Record<string, unknown>,
+  ) => Record<string, unknown>;
 }
 
 export interface WidgetDefinition {
