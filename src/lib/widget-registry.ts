@@ -17,7 +17,22 @@ export interface WidgetOptionsProps {
   onChange: (newData: Record<string, unknown>) => void;
 }
 
-export type SourceType = 'image' | 'video' | 'embed' | 'feed' | 'document' | 'calendar';
+export type SourceType =
+  | 'image'
+  | 'video'
+  | 'embed'
+  | 'feed'
+  | 'document'
+  | 'calendar'
+  | 'canva'
+  | 'google-sheets'
+  | 'google-slides'
+  | 'google-calendar'
+  | 'youtube'
+  | 'google-drive'
+  | 'powerbi'
+  | 'unsplash'
+  | 'vimeo';
 
 export interface SourceBinding {
   /** Which prop receives the source URL (e.g. 'url', 'feedUrl') */
