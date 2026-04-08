@@ -14,6 +14,14 @@ export {
   type SourceBinding,
 } from './lib/widget-registry';
 
+export {
+  WidgetOptionsSurfaceProvider,
+  useWidgetOptionsSurface,
+  shouldHideGalleryControl,
+  type WidgetOptionsSurface,
+  type GalleryControlMetadata,
+} from './lib/widget-options-surface';
+
 // === Data Utilities ===
 export {
   fetchJsonWithCache,

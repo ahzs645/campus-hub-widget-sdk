@@ -43,6 +43,7 @@ export interface LinkedSource {
   description?: string;
   metadata?: {
     provider?: string;
+    thumbnailUrl?: string;
   };
 }
 

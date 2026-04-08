@@ -1,3 +1,8 @@
+import {
+  shouldHideGalleryControl,
+  useWidgetOptionsSurface,
+} from '../../lib/widget-options-surface';
+
 interface FormSwitchProps {
   label: string;
   name: string;
@@ -6,6 +11,15 @@ interface FormSwitchProps {
 }
 
 export default function FormSwitch({ label, name, checked, onChange }: FormSwitchProps) {
+  const surface = useWidgetOptionsSurface();
+
+  if (
+    surface === 'gallery' &&
+    shouldHideGalleryControl({ label, name, type: 'switch' })
+  ) {
+    return null;
+  }
+
   return (
     <div className="flex items-center justify-between">
       <label className="text-sm font-medium text-[var(--ui-text-muted)]">{label}</label>

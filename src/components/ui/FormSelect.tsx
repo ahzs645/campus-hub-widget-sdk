@@ -1,3 +1,8 @@
+import {
+  shouldHideGalleryControl,
+  useWidgetOptionsSurface,
+} from '../../lib/widget-options-surface';
+
 interface SelectOption {
   value: string;
   label: string;
@@ -12,6 +17,15 @@ interface FormSelectProps {
 }
 
 export default function FormSelect({ label, name, value, options, onChange }: FormSelectProps) {
+  const surface = useWidgetOptionsSurface();
+
+  if (
+    surface === 'gallery' &&
+    shouldHideGalleryControl({ label, name, type: 'select' })
+  ) {
+    return null;
+  }
+
   return (
     <div className="space-y-1">
       <label className="block text-sm font-medium text-[var(--ui-text-muted)]">{label}</label>

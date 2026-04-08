@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { useWidgetOptionsSurface } from '../../lib/widget-options-surface';
 
 interface OptionsSectionProps {
   /** Section heading text */
@@ -61,6 +62,12 @@ interface OptionsPreviewProps {
  * Preview section at the bottom of an options panel.
  */
 export function OptionsPreview({ title = 'Preview', children, className = '' }: OptionsPreviewProps) {
+  const surface = useWidgetOptionsSurface();
+
+  if (surface === 'gallery') {
+    return null;
+  }
+
   return (
     <div className="border-t border-[color:var(--ui-item-border)] pt-6">
       <h4 className="font-semibold text-[var(--ui-text)] mb-4 text-center">{title}</h4>

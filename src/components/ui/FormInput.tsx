@@ -1,4 +1,8 @@
 import { InputHTMLAttributes } from 'react';
+import {
+  shouldHideGalleryControl,
+  useWidgetOptionsSurface,
+} from '../../lib/widget-options-surface';
 
 interface FormInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   label: string;
@@ -7,6 +11,15 @@ interface FormInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'on
 }
 
 export default function FormInput({ label, name, type = 'text', value, onChange, ...props }: FormInputProps) {
+  const surface = useWidgetOptionsSurface();
+
+  if (
+    surface === 'gallery' &&
+    shouldHideGalleryControl({ label, name, type })
+  ) {
+    return null;
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value;
     onChange(name, val);
