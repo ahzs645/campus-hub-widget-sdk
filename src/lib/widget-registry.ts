@@ -28,6 +28,7 @@ export type SourceType =
   | 'document'
   | 'calendar'
   | 'canva'
+  | 'powerpoint'
   | 'google-sheets'
   | 'google-slides'
   | 'google-calendar'
