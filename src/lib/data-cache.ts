@@ -79,6 +79,22 @@ export const isEntryFresh = (entry: CacheEntry): boolean => entry.expiresAt > Da
 const SYSTEM_CORS_PROXY: string | undefined =
   (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_CORS_PROXY_URL as string) || undefined;
 
+const ABSOLUTE_HTTP_URL = /^https?:\/\//i;
+
+function shouldProxyUrl(targetUrl: string): boolean {
+  if (!ABSOLUTE_HTTP_URL.test(targetUrl)) return false;
+
+  if (typeof window !== 'undefined') {
+    try {
+      return new URL(targetUrl).origin !== window.location.origin;
+    } catch {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 /**
  * Return the currently configured system CORS-proxy URL (if any).
  * Useful for widgets that need to check whether a proxy is available
@@ -95,12 +111,15 @@ export function getCorsProxyUrl(): string | undefined {
  * Returns the target URL unchanged when no proxy is configured.
  */
 export function buildProxyUrl(targetUrl: string): string {
+  const trimmedTargetUrl = targetUrl.trim();
+  if (!trimmedTargetUrl) return targetUrl;
+
   const proxy = SYSTEM_CORS_PROXY;
-  if (!proxy) return targetUrl;
+  if (!proxy || !shouldProxyUrl(trimmedTargetUrl)) return trimmedTargetUrl;
 
   // Normalize: strip trailing /, ?, and any partial ?url= the operator may have set
   const base = proxy.replace(/\/?\??(?:url=)?$/i, '');
-  return `${base}/?url=${encodeURIComponent(targetUrl)}`;
+  return `${base}/?url=${encodeURIComponent(trimmedTargetUrl)}`;
 }
 
 export async function fetchTextWithCache(
