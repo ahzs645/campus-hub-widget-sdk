@@ -83,6 +83,20 @@ export { default as FormSelect } from './components/ui/FormSelect';
 export { default as FormSwitch } from './components/ui/FormSwitch';
 export { default as FormStepper } from './components/ui/FormStepper';
 
+// === Declarative Options Schema (ported from TRMNL custom_fields) ===
+export { default as SchemaOptionsForm } from './components/SchemaOptionsForm';
+export {
+  defaultsFromSchema,
+  requiredFields,
+  isFieldVisible,
+  isFieldValueMissing,
+  type WidgetFieldType,
+  type WidgetFieldOption,
+  type WidgetFieldCondition,
+  type WidgetOptionsField,
+  type WidgetOptionsSchema,
+} from './lib/options-schema';
+
 // === Primitives (reusable themed UI building blocks for widgets) ===
 export {
   ThemedContainer,

@@ -1,6 +1,7 @@
 // Widget Registry - Central hub for all widget types
 import { ComponentType } from 'react';
 import type { IconName } from './icon-names';
+import type { WidgetOptionsSchema } from './options-schema';
 
 export interface WidgetComponentProps {
   config?: Record<string, unknown>;
@@ -79,7 +80,17 @@ export interface WidgetDefinition {
   defaultH: number;
   tags?: string[];
   component: ComponentType<WidgetComponentProps>;
+  /**
+   * Bespoke options UI. Takes precedence over `optionsSchema` when both are
+   * set. Prefer `optionsSchema` for new widgets.
+   */
   OptionsComponent?: ComponentType<WidgetOptionsProps>;
+  /**
+   * Declarative options schema. When present (and no OptionsComponent), the
+   * editor auto-renders the options form via SchemaOptionsForm, and the
+   * template linter checks its `required` fields.
+   */
+  optionsSchema?: WidgetOptionsSchema;
   defaultProps?: Record<string, unknown>;
   createDefaultProps?: WidgetDefaultPropsFactory;
   /** Source types this widget can consume. Omit = no source picker shown. */
