@@ -94,6 +94,37 @@ export function useWidgetOptionsSurface() {
   return useContext(WidgetOptionsSurfaceContext);
 }
 
+// ── Media picker bridge ──
+// The host app owns the Media library (and its auth), so it injects a picker
+// through this context. Widget option inputs (FormInput with `media`) call it
+// to let users browse stored assets instead of pasting a raw URL.
+export interface MediaPickRequest {
+  accept?: string;
+  onSelect: (url: string, name: string) => void;
+}
+
+type MediaPickFn = (request: MediaPickRequest) => void;
+
+const MediaPickerContext = createContext<MediaPickFn | null>(null);
+
+export function MediaPickerProvider({
+  value,
+  children,
+}: {
+  value: MediaPickFn | null;
+  children: ReactNode;
+}) {
+  return (
+    <MediaPickerContext.Provider value={value}>
+      {children}
+    </MediaPickerContext.Provider>
+  );
+}
+
+export function useMediaPicker() {
+  return useContext(MediaPickerContext);
+}
+
 export function shouldHideGalleryControl({
   label,
   name,

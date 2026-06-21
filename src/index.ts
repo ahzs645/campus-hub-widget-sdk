@@ -20,8 +20,11 @@ export {
   WidgetOptionsSurfaceProvider,
   useWidgetOptionsSurface,
   shouldHideGalleryControl,
+  MediaPickerProvider,
+  useMediaPicker,
   type WidgetOptionsSurface,
   type GalleryControlMetadata,
+  type MediaPickRequest,
 } from './lib/widget-options-surface';
 
 // === Data Utilities ===
