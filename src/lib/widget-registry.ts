@@ -2,6 +2,7 @@
 import { ComponentType } from 'react';
 import type { IconName } from './icon-names';
 import type { WidgetOptionsSchema } from './options-schema';
+import type { SourceCapabilities, SourceRequirement } from './source-capabilities';
 
 export interface WidgetComponentProps {
   config?: Record<string, unknown>;
@@ -16,6 +17,13 @@ export interface WidgetComponentProps {
 export interface WidgetOptionsProps {
   data: Record<string, unknown>;
   onChange: (newData: Record<string, unknown>) => void;
+  /**
+   * The library source currently linked to this widget via `__sourceRef`, when
+   * one is selected. Resolved by the editor so options UIs can show the linked
+   * source's name and capabilities (e.g. the Poster Carousel's Data Source
+   * section) without querying the source list themselves.
+   */
+  linkedSource?: LinkedSource;
 }
 
 export type WidgetDefaultPropsFactory = () => Record<string, unknown>;
@@ -49,6 +57,8 @@ export interface LinkedSource {
     provider?: string;
     thumbnailUrl?: string;
   };
+  /** Persisted/derived content-shape snapshot, when available. */
+  capabilities?: SourceCapabilities;
 }
 
 export interface SourceBinding {
@@ -58,6 +68,14 @@ export interface SourceBinding {
   types: SourceType[];
   /** Whether this prop accepts multiple sources (e.g. slideshow slides) */
   multiple?: boolean;
+  /**
+   * Capabilities this binding needs from a source (e.g. `{ hasImages: true }`).
+   * Sources that don't meet this are still shown in the picker, greyed with a
+   * reason, rather than hidden.
+   */
+  requires?: SourceRequirement;
+  /** Short hint shown under the picker, e.g. "Needs images for the carousel". */
+  capabilityHint?: string;
   /** Optional source filter for narrowing picker results. */
   matchSource?: (source: LinkedSource) => boolean;
   /** Optional widget-specific mapping when linking a source. */

@@ -14,6 +14,7 @@ export {
   type WidgetDefaultPropsFactory,
   type SourceType,
   type SourceBinding,
+  type LinkedSource,
 } from './lib/widget-registry';
 
 export {
@@ -54,6 +55,18 @@ export {
   type RemoteFeedItem,
   type RemoteFeedResult,
 } from './lib/feed-sources';
+
+// === Source Capabilities ===
+export {
+  analyzeSourcePayload,
+  describeCapabilities,
+  meetsRequirement,
+  formatLabel,
+  type SourceCapabilities,
+  type SourceRequirement,
+  type SourceFormat,
+  type AnalyzeInput,
+} from './lib/source-capabilities';
 
 // === Video Utilities ===
 export {
