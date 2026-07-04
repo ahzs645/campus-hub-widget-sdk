@@ -51,6 +51,20 @@ describe('analyzeSourcePayload — JSON', () => {
     expect(cap.format).toBe('json')
     expect(cap.itemCount).toBe(1)
   })
+
+  it('resolves a relative sample image against the source URL', () => {
+    const payload = [{ title: 'Post', image: '/wp-content/uploads/a.jpg' }]
+    const cap = analyzeSourcePayload({ payload, url: 'https://blog.example.com/feed.json' }, NOW)
+    expect(cap.hasImages).toBe(true)
+    expect(cap.sample?.imageUrl).toBe('https://blog.example.com/wp-content/uploads/a.jpg')
+  })
+
+  it('drops an unresolvable relative sample image but still reports hasImages', () => {
+    const payload = [{ title: 'Post', image: '/wp-content/uploads/a.jpg' }]
+    const cap = analyzeSourcePayload({ payload }, NOW)
+    expect(cap.hasImages).toBe(true)
+    expect(cap.sample?.imageUrl).toBeUndefined()
+  })
 })
 
 describe('analyzeSourcePayload — feeds & markup', () => {
@@ -71,6 +85,13 @@ describe('analyzeSourcePayload — feeds & markup', () => {
     const cap = analyzeSourcePayload({ payload: atom }, NOW)
     expect(cap.format).toBe('atom')
     expect(cap.itemCount).toBe(1)
+  })
+
+  it('omits the sample when the feed title is empty', () => {
+    const rss = `<rss><channel><title></title><item><title></title></item></channel></rss>`
+    const cap = analyzeSourcePayload({ payload: rss }, NOW)
+    expect(cap.format).toBe('rss')
+    expect(cap.sample).toBeUndefined()
   })
 
   it('detects an HTML page with images', () => {

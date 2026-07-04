@@ -129,12 +129,10 @@ function findJsonArray(data: unknown): unknown[] | null {
 
 function detectItemImage(item: Record<string, unknown>): string | undefined {
   const candidate = firstStringByKeys(item, IMAGE_KEYS);
-  if (candidate && (candidate.startsWith('data:image/') || IMAGE_EXT.test(candidate) || /^https?:\/\//.test(candidate))) {
-    // Accept absolute http(s) even without an image extension (many CDNs omit it),
-    // but require an extension for relative/other strings to avoid false positives.
-    if (candidate.startsWith('data:image/') || IMAGE_EXT.test(candidate) || isLikelyImageHost(candidate)) {
-      return candidate;
-    }
+  // Accept data URIs, anything with an image extension (absolute or relative),
+  // or an extensionless URL on an image-ish host (many CDNs omit extensions).
+  if (candidate && (candidate.startsWith('data:image/') || IMAGE_EXT.test(candidate) || isLikelyImageHost(candidate))) {
+    return candidate;
   }
   // Nested WordPress featured media.
   const embedded = (item as Record<string, unknown>)._embedded;
@@ -152,7 +150,22 @@ function isLikelyImageHost(url: string): boolean {
   return /(images?|img|cdn|media|photos?|static|uploads?)\./i.test(url) || /\/(wp-content|uploads|media|images?)\//i.test(url);
 }
 
-function analyzeJson(data: unknown, detectedAt: number): SourceCapabilities {
+/**
+ * Resolve an image candidate to an absolute URL so the persisted sample stays
+ * renderable outside the source's own origin. Relative candidates without a
+ * base are dropped — a consumer could never load them.
+ */
+function resolveImageUrl(candidate: string | undefined, baseUrl: string | undefined): string | undefined {
+  if (!candidate) return undefined;
+  if (candidate.startsWith('data:image/')) return candidate;
+  try {
+    return new URL(candidate, baseUrl || undefined).toString();
+  } catch {
+    return undefined;
+  }
+}
+
+function analyzeJson(data: unknown, detectedAt: number, baseUrl?: string): SourceCapabilities {
   const array = findJsonArray(data);
   const sampleRecord = (array ?? []).find(isRecord) ?? (isRecord(data) ? data : undefined);
 
@@ -196,7 +209,7 @@ function analyzeJson(data: unknown, detectedAt: number): SourceCapabilities {
     sample: {
       title,
       subtitle: firstStringByKeys(sampleRecord, DATE_KEYS),
-      imageUrl: sampleImage,
+      imageUrl: resolveImageUrl(sampleImage, baseUrl),
     },
     detectedAt,
   };
@@ -271,7 +284,7 @@ function stripTags(input: string): string {
  * already have parsed JSON (the poller does), otherwise pass `rawText`.
  */
 export function analyzeSourcePayload(input: AnalyzeInput, now: number = Date.now()): SourceCapabilities {
-  const { payload, rawText, contentType, sourceType } = input;
+  const { payload, rawText, contentType, sourceType, url } = input;
 
   if (sourceType === 'image' || sourceType === 'unsplash') {
     return { format: 'image', hasImages: true, hasText: false, hasDates: false, hasLinks: false, fields: [], detectedAt: now };
@@ -282,7 +295,7 @@ export function analyzeSourcePayload(input: AnalyzeInput, now: number = Date.now
 
   // Prefer a parsed object/array payload.
   if (payload !== undefined && payload !== null && (typeof payload === 'object')) {
-    return analyzeJson(payload, now);
+    return analyzeJson(payload, now, url);
   }
 
   const text = (rawText ?? (typeof payload === 'string' ? payload : '') ?? '').trim();
@@ -297,7 +310,7 @@ export function analyzeSourcePayload(input: AnalyzeInput, now: number = Date.now
   }
   if (text.startsWith('{') || text.startsWith('[') || ct.includes('json')) {
     try {
-      return analyzeJson(JSON.parse(text), now);
+      return analyzeJson(JSON.parse(text), now, url);
     } catch {
       // fall through to markup detection
     }
