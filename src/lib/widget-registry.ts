@@ -83,6 +83,15 @@ export interface SourceBinding {
     source: LinkedSource,
     currentData: Record<string, unknown>,
   ) => Record<string, unknown>;
+  /** Label for the action that removes the linked source. */
+  unlinkLabel?: string;
+  /**
+   * Widget-specific state to apply when a source is removed. For example, a
+   * feed-backed carousel can switch back to its manually-managed posters.
+   */
+  removeSource?: (
+    currentData: Record<string, unknown>,
+  ) => Record<string, unknown>;
 }
 
 export interface WidgetDefinition {
