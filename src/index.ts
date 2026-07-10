@@ -81,6 +81,7 @@ export {
 // === Hooks ===
 export { useFitScale, useAdaptiveFitScale } from './hooks/useFitScale';
 export { useTextResize } from './hooks/useTextResize';
+export { useLoopingAutoScroll } from './hooks/useLoopingAutoScroll';
 export { useWakeLock } from './hooks/useWakeLock';
 export { useEvents, formatDate, formatTime, type CalendarEvent, type UseEventsOptions } from './hooks/useEvents';
 
