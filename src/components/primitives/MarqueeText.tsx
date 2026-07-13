@@ -65,6 +65,7 @@ export default function MarqueeText({
     <div ref={outerRef} className={`overflow-hidden whitespace-nowrap ${className}`} style={style}>
       <span
         ref={innerRef}
+        data-layout-diagnostic-ignore="true"
         className="inline-block animate-marquee"
         style={{ animationDuration: `${duration}s` }}
       >
