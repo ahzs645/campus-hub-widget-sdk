@@ -34,18 +34,32 @@ export default function PillIndicator({
 }: PillIndicatorProps) {
   return (
     <div className={`flex gap-1.5 ${className}`}>
-      {Array.from({ length: count }).map((_, i) => (
-        <button
-          key={i}
-          type="button"
-          className="h-1.5 rounded-full transition-all duration-300 shrink-0"
-          style={{
-            width: i === active ? activeWidth : inactiveWidth,
-            backgroundColor: i === active ? theme.accent : inactiveColor,
-          }}
-          onClick={() => onSelect?.(i)}
-        />
-      ))}
+      {Array.from({ length: count }).map((_, i) => {
+        const pill = (
+          <span
+            className="block h-1.5 rounded-full transition-all duration-300 shrink-0"
+            style={{
+              width: i === active ? activeWidth : inactiveWidth,
+              backgroundColor: i === active ? theme.accent : inactiveColor,
+            }}
+          />
+        );
+
+        return onSelect ? (
+          <button
+            key={i}
+            type="button"
+            aria-label={`Go to item ${i + 1} of ${count}`}
+            aria-current={i === active ? 'true' : undefined}
+            className="flex min-h-6 items-center py-2 -my-2"
+            onClick={() => onSelect(i)}
+          >
+            {pill}
+          </button>
+        ) : (
+          <span key={i}>{pill}</span>
+        );
+      })}
     </div>
   );
 }
