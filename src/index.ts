@@ -112,6 +112,60 @@ export {
   type WeekdayName,
 } from './lib/group-fitness-source';
 
+export {
+  CAFETERIA_DAY_NAMES,
+  DEFAULT_CAFETERIA_MENU_URL,
+  categoriseCafeteriaHtml,
+  categorizeDanaSections,
+  createEmptyCafeteriaMenu,
+  extractDanaIframeUrls,
+  getCafeteriaMenuStatus,
+  hasCafeteriaMenuContent,
+  loadCafeteriaSource,
+  normalizeCafeteriaPayload,
+  parseDanaMenuHtml,
+  type CafeteriaMealSection,
+  type CafeteriaMenuItem,
+  type CafeteriaMenuStatus,
+  type LoadCafeteriaSourceOptions,
+  type NormalizedCafeteriaSource,
+  type ParsedCafeteriaMenu,
+} from './lib/cafeteria-source';
+
+export {
+  normalizeClubsPayload,
+  parseClubsFromApi,
+  parseClubsFromHtml,
+  type ClubItem,
+} from './lib/club-source';
+
+export {
+  normalizeConfessionsPayload,
+  parseConfessionsFromMarkup,
+  type ConfessionItem,
+  type RawConfession,
+} from './lib/confessions-source';
+
+export {
+  createDefaultLibCalPreviewRequest,
+  createLibCalAvailabilityFormData,
+  DEFAULT_LIBCAL_AVAILABILITY_URL,
+  normalizeLibCalGridResponse,
+  type LibCalAvailabilityQuery,
+  type LibCalGridResponse,
+  type LibCalSlot,
+} from './lib/libcal-source';
+
+export {
+  parseGeoMetWeather,
+  type GeoMetWeatherObservation,
+} from './lib/geomet-weather-source';
+
+export {
+  extractRadioNowPlaying,
+  type RadioNowPlaying,
+} from './lib/radio-source';
+
 // === Video Utilities ===
 export {
   detectVideoSource,

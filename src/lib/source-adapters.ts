@@ -10,6 +10,20 @@ import {
   parseGroupFitnessSchedule,
   type ParsedGroupFitnessSchedule,
 } from './group-fitness-source';
+import {
+  DEFAULT_CAFETERIA_MENU_URL,
+  normalizeCafeteriaPayload,
+  type ParsedCafeteriaMenu,
+} from './cafeteria-source';
+import { normalizeClubsPayload } from './club-source';
+import { normalizeConfessionsPayload } from './confessions-source';
+import {
+  createDefaultLibCalPreviewRequest,
+  DEFAULT_LIBCAL_AVAILABILITY_URL,
+  normalizeLibCalGridResponse,
+} from './libcal-source';
+import { parseGeoMetWeather } from './geomet-weather-source';
+import { extractRadioNowPlaying } from './radio-source';
 
 export type SourceImageQuality = 'original' | 'thumbnail';
 
@@ -54,6 +68,8 @@ export interface SourceAdapter {
   defaultUrl?: string;
   matches: (source: Pick<SourceAdapterInput, 'url' | 'presetId'>) => boolean;
   normalize: (input: SourceAdapterInput) => NormalizedSourceResult;
+  /** Provider request contract used when a preview cannot use a plain GET. */
+  createPreviewRequest?: () => RequestInit;
 }
 
 const UNBC_RELEASES_URL = 'https://www.unbc.ca/our-stories/releases';
@@ -63,6 +79,8 @@ export interface NormalizedWeatherObservation {
   kind: 'weather-observation';
   observedAt: string;
   temperatureC: number;
+  condition?: string;
+  location?: string;
   dewPointC?: number;
   humidityPercent?: number;
   pressureHpa?: number;
@@ -312,7 +330,163 @@ function groupFitnessItems(schedule: ParsedGroupFitnessSchedule | null): Normali
   );
 }
 
+function jsonPayload(input: SourceAdapterInput): unknown {
+  if (input.payload !== undefined) return input.payload;
+  if (typeof input.rawText !== 'string') return undefined;
+  try {
+    return JSON.parse(input.rawText) as unknown;
+  } catch {
+    return undefined;
+  }
+}
+
+function cafeteriaItems(menu: ParsedCafeteriaMenu): NormalizedSourceItem[] {
+  return (['weekly', 'breakfast', 'lunch', 'dinner', 'showtime'] as const)
+    .flatMap((period) =>
+      menu[period].flatMap((section) =>
+        section.items.map((item, index) => ({
+          id: `${period}:${section.title}:${item.name}:${index}`,
+          title: item.name,
+          subtitle: `${period[0].toUpperCase()}${period.slice(1)} · ${section.title}`,
+          description: [item.description, ...(item.dietary ?? [])].filter(Boolean).join(' · ') || undefined,
+        }))));
+}
+
 const SOURCE_ADAPTERS: SourceAdapter[] = [
+  {
+    id: 'msc-geomet-weather',
+    label: 'MSC GeoMet weather',
+    matches: ({ url, presetId }) =>
+      presetId?.startsWith('weathercan-') === true
+      || /api\.weather\.gc\.ca\/collections\/citypageweather-realtime\/items\//i.test(url ?? ''),
+    normalize: (input) => {
+      const observation = parseGeoMetWeather(jsonPayload(input));
+      return {
+        adapterId: 'msc-geomet-weather',
+        adapterLabel: 'MSC GeoMet weather',
+        sourceFormat: 'json',
+        data: observation,
+        items: [],
+      };
+    },
+  },
+  {
+    id: 'radio-now-playing',
+    label: 'Radio now playing',
+    matches: ({ url, presetId }) =>
+      presetId === 'cfur-now-playing'
+      || /(?:api\.)?iheart\.com\/.*(?:live-meta\/stream|currentTrackMeta)/i.test(url ?? ''),
+    normalize: (input) => {
+      const nowPlaying = extractRadioNowPlaying(jsonPayload(input), input.url);
+      const items = nowPlaying
+        ? [{
+          id: nowPlaying.timestamp ?? `${nowPlaying.artist ?? ''}:${nowPlaying.title ?? ''}`,
+          title: nowPlaying.title ?? nowPlaying.showName ?? 'Now playing',
+          subtitle: nowPlaying.artist,
+          description: nowPlaying.album ?? nowPlaying.description,
+          imageUrl: nowPlaying.artworkUrl,
+        }]
+        : [];
+      return {
+        adapterId: 'radio-now-playing',
+        adapterLabel: 'Radio now playing',
+        sourceFormat: 'json',
+        data: nowPlaying,
+        items,
+      };
+    },
+  },
+  {
+    id: 'unbc-cafeteria-menu',
+    label: 'UNBC cafeteria menu',
+    defaultUrl: DEFAULT_CAFETERIA_MENU_URL,
+    matches: ({ url, presetId }) =>
+      presetId === 'unbc-cafeteria-menu'
+      || /(?:unbc\.icaneat\.ca\/menu|menu\.d[ai]nahospitality\.ca\/unbc\/menu\.asp)(?:[/?#]|$)/i.test(url ?? ''),
+    normalize: (input) => {
+      const payload = input.payload ?? input.rawText ?? '';
+      const normalized = normalizeCafeteriaPayload(payload);
+      const items = cafeteriaItems(normalized.menu);
+      return {
+        adapterId: 'unbc-cafeteria-menu',
+        adapterLabel: 'UNBC cafeteria menu',
+        sourceFormat: typeof payload === 'string' ? 'html' : 'json',
+        data: normalized,
+        items,
+      };
+    },
+  },
+  {
+    id: 'libcal-room-availability',
+    label: 'LibCal room availability',
+    defaultUrl: DEFAULT_LIBCAL_AVAILABILITY_URL,
+    matches: ({ url, presetId }) =>
+      presetId === 'unbc-library-availability'
+      || /(?:^|\.)libcal\.com\/spaces\/availability\/grid(?:[/?#]|$)/i.test(url ?? ''),
+    createPreviewRequest: createDefaultLibCalPreviewRequest,
+    normalize: (input) => {
+      const response = normalizeLibCalGridResponse(input.payload ?? input.rawText ?? '');
+      const items = response.slots.map((slot, index) => ({
+        id: `${slot.itemId}:${slot.start ?? index}`,
+        title: `Room ${slot.itemId}`,
+        subtitle: [slot.start, slot.end].filter(Boolean).join(' – ') || undefined,
+        description: slot.className === 's-lc-eq-checkout' ? 'Booked' : 'Available',
+      }));
+      return {
+        adapterId: 'libcal-room-availability',
+        adapterLabel: 'LibCal room availability',
+        sourceFormat: 'json',
+        data: response,
+        items,
+      };
+    },
+  },
+  {
+    id: 'unbc-confessions',
+    label: 'UNBC confessions',
+    matches: ({ url, presetId }) =>
+      presetId === 'unbc-confessions-feed'
+      || /overtheedge\.unbc\.ca\/(?:wp-json\/wp\/v2\/pages[^#]*\bslug=confession|confession\/?)(?:[&#].*)?$/i.test(url ?? ''),
+    normalize: (input) => {
+      const confessions = normalizeConfessionsPayload(
+        input.payload ?? input.rawText ?? '',
+        input.options?.maxItems ?? 50,
+      );
+      return {
+        adapterId: 'unbc-confessions',
+        adapterLabel: 'UNBC confessions',
+        sourceFormat: typeof (input.payload ?? input.rawText) === 'string' ? 'html' : 'json',
+        data: confessions,
+        items: confessions.map((confession) => ({
+          id: confession.id,
+          title: confession.text,
+          subtitle: confession.by || undefined,
+        })),
+      };
+    },
+  },
+  {
+    id: 'unbc-clubs',
+    label: 'UNBC clubs',
+    matches: ({ url, presetId }) =>
+      presetId === 'unbc-clubs-feed'
+      || /overtheedge\.unbc\.ca\/(?:wp-json\/wp\/v2\/organization|clubs\/?)(?:[?#]|$)/i.test(url ?? ''),
+    normalize: (input) => {
+      const clubs = normalizeClubsPayload(input.payload ?? input.rawText ?? '');
+      return {
+        adapterId: 'unbc-clubs',
+        adapterLabel: 'UNBC clubs',
+        sourceFormat: typeof (input.payload ?? input.rawText) === 'string' ? 'html' : 'json',
+        data: clubs,
+        items: clubs.map((club) => ({
+          id: club.id,
+          title: club.name,
+          imageUrl: club.image || undefined,
+          url: club.link || undefined,
+        })),
+      };
+    },
+  },
   {
     id: 'unbc-news-releases',
     label: 'UNBC news releases',

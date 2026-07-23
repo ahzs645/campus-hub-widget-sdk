@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  getSourceAdapter,
   normalizeSourcePayload,
   parseRockGymProOccupancy,
   parseUNBCRooftopWeather,
@@ -127,6 +128,146 @@ describe('Rock Gym Pro occupancy source adapter', () => {
       capacity: 30,
       label: 'Current Climber Count',
       observedAt: 'Jul 23 8:30 AM',
+    });
+  });
+});
+
+describe('remaining Source Store adapters', () => {
+  it('normalizes an iCanEat menu page into meal records', () => {
+    const normalized = normalizeSourcePayload({
+      presetId: 'unbc-cafeteria-menu',
+      rawText: `
+        <h2>Lunch</h2>
+        <ul><li>Roast chicken</li><li>Seasonal vegetables</li></ul>
+      `,
+    });
+
+    expect(normalized?.adapterId).toBe('unbc-cafeteria-menu');
+    expect(normalized?.items.map((item) => item.title)).toEqual([
+      'Roast chicken',
+      'Seasonal vegetables',
+    ]);
+    expect(normalized?.data).toMatchObject({ status: 'ready' });
+  });
+
+  it('normalizes LibCal slots and exposes its POST preview contract', () => {
+    const normalized = normalizeSourcePayload({
+      presetId: 'unbc-library-availability',
+      payload: {
+        slots: [{
+          itemId: '17421',
+          start: '2026-07-23 09:00:00',
+          end: '2026-07-23 09:30:00',
+          className: 's-lc-eq-avail',
+        }],
+      },
+    });
+
+    expect(normalized?.adapterId).toBe('libcal-room-availability');
+    expect(normalized?.data).toMatchObject({
+      slots: [{ itemId: 17421, className: 's-lc-eq-avail' }],
+    });
+    expect(normalized?.items[0]).toMatchObject({
+      title: 'Room 17421',
+      description: 'Available',
+    });
+
+    const adapter = getSourceAdapter('libcal-room-availability');
+    expect(adapter?.createPreviewRequest?.().method).toBe('POST');
+  });
+
+  it('extracts the embedded confessions payload from WordPress content', () => {
+    const normalized = normalizeSourcePayload({
+      presetId: 'unbc-confessions-feed',
+      payload: [{
+        content: {
+          rendered: `<div data-confessions='[{"id":7,"testimonial":"Library &amp; coffee","by":"Anonymous"}]'></div>`,
+        },
+      }],
+    });
+
+    expect(normalized?.adapterId).toBe('unbc-confessions');
+    expect(normalized?.data).toEqual([{
+      id: '7',
+      text: 'Library & coffee',
+      by: 'Anonymous',
+    }]);
+  });
+
+  it('maps WordPress club records to canonical linked image records', () => {
+    const normalized = normalizeSourcePayload({
+      presetId: 'unbc-clubs-feed',
+      payload: [{
+        id: 42,
+        title: { rendered: 'Outdoor &amp; Recreation Club' },
+        link: 'https://overtheedge.unbc.ca/organization/outdoors/',
+        _embedded: {
+          'wp:featuredmedia': [{
+            source_url: 'https://overtheedge.unbc.ca/outdoors.jpg',
+          }],
+        },
+      }],
+    });
+
+    expect(normalized?.adapterId).toBe('unbc-clubs');
+    expect(normalized?.items[0]).toMatchObject({
+      title: 'Outdoor & Recreation Club',
+      imageUrl: 'https://overtheedge.unbc.ca/outdoors.jpg',
+      url: 'https://overtheedge.unbc.ca/organization/outdoors/',
+    });
+  });
+});
+
+describe('additional Source Store parser audit adapters', () => {
+  it('normalizes MSC GeoMet current conditions', () => {
+    const normalized = normalizeSourcePayload({
+      presetId: 'weathercan-prince-george',
+      payload: {
+        properties: {
+          name: { en: 'Prince George' },
+          currentConditions: {
+            condition: { en: 'Cloudy' },
+            temperature: { value: { en: 12.5 } },
+            relativeHumidity: { value: { en: 75 } },
+            pressure: { value: { en: 100.8 } },
+            wind: { speed: { value: { en: 18 } } },
+            timestamp: { en: '2026-07-23T15:00:00Z' },
+          },
+        },
+      },
+    });
+
+    expect(normalized?.adapterId).toBe('msc-geomet-weather');
+    expect(normalized?.data).toMatchObject({
+      kind: 'weather-observation',
+      location: 'Prince George',
+      condition: 'Cloudy',
+      temperatureC: 12.5,
+      pressureHpa: 1008,
+      windSpeedMps: 5,
+    });
+  });
+
+  it('normalizes radio metadata before Radio Station consumes it', () => {
+    const normalized = normalizeSourcePayload({
+      presetId: 'cfur-now-playing',
+      url: 'https://ca.api.iheart.com/api/v3/live-meta/stream/9357/currentTrackMeta',
+      payload: {
+        trackTitle: 'Northern Lights',
+        artistName: 'Campus Band',
+        imageUrl: '/artwork.jpg',
+      },
+    });
+
+    expect(normalized?.adapterId).toBe('radio-now-playing');
+    expect(normalized?.data).toMatchObject({
+      title: 'Northern Lights',
+      artist: 'Campus Band',
+      artworkUrl: 'https://ca.api.iheart.com/artwork.jpg',
+    });
+    expect(normalized?.items[0]).toMatchObject({
+      title: 'Northern Lights',
+      subtitle: 'Campus Band',
     });
   });
 });
