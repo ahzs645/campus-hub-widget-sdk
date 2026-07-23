@@ -101,6 +101,35 @@ describe('analyzeSourcePayload — feeds & markup', () => {
     expect(cap.hasImages).toBe(true)
   })
 
+  it('analyzes provider HTML after source normalization', () => {
+    const html = `
+      <div class="article-item">
+        <img src="/sites/default/files/styles/featured/public/story.jpg.webp" />
+        <h2><a href="/our-stories/story/foundation-funding">Foundation funding</a></h2>
+        <time>Jul 22, 2026</time>
+      </div>
+    `
+    const cap = analyzeSourcePayload({
+      rawText: html,
+      contentType: 'text/html',
+      sourceType: 'api',
+      url: 'https://www.unbc.ca/our-stories/releases',
+    }, NOW)
+
+    expect(cap).toMatchObject({
+      format: 'json',
+      itemCount: 1,
+      hasImages: true,
+      hasText: true,
+      hasDates: true,
+      hasLinks: true,
+      sample: {
+        title: 'Foundation funding',
+        subtitle: 'Jul 22, 2026',
+      },
+    })
+  })
+
   it('detects an iCalendar feed', () => {
     const ical = `BEGIN:VCALENDAR\nBEGIN:VEVENT\nSUMMARY:e\nEND:VEVENT\nBEGIN:VEVENT\nEND:VEVENT\nEND:VCALENDAR`
     const cap = analyzeSourcePayload({ payload: ical }, NOW)

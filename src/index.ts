@@ -68,6 +68,50 @@ export {
   type AnalyzeInput,
 } from './lib/source-capabilities';
 
+// === Runtime Visibility Conditions ===
+export {
+  VISIBILITY_SIGNAL_KEY_MAX_LENGTH,
+  VISIBILITY_SIGNAL_KEY_PATTERN,
+  evaluateVisibilityCondition,
+  isVisibilityScalar,
+  isVisibilitySignalKey,
+  normalizeVisibilityCondition,
+  parseVisibilityScalar,
+  type SimpleVisibilityCondition,
+  type VisibilityScalar,
+  type VisibilitySignal,
+} from './lib/visibility-condition';
+
+export {
+  getSourceAdapter,
+  resolveSourceAdapter,
+  normalizeSourcePayload,
+  parseRockGymProOccupancy,
+  parseUNBCRooftopWeather,
+  parseUNBCReleases,
+  type NormalizedSourceItem,
+  type NormalizedSourceResult,
+  type NormalizedOccupancy,
+  type NormalizedWeatherObservation,
+  type SourceAdapter,
+  type SourceAdapterInput,
+  type SourceAdapterOptions,
+  type SourceImageQuality,
+} from './lib/source-adapters';
+
+export {
+  DEFAULT_GROUP_FITNESS_URL,
+  WEEKDAY_NAMES,
+  getTodayWeekday,
+  isWeekdayName,
+  parseGroupFitnessSchedule,
+  type GroupFitnessRow,
+  type GroupFitnessSection,
+  type GroupFitnessViewMode,
+  type ParsedGroupFitnessSchedule,
+  type WeekdayName,
+} from './lib/group-fitness-source';
+
 // === Video Utilities ===
 export {
   detectVideoSource,

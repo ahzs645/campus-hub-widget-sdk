@@ -10,6 +10,8 @@
 // this reason. The rich, DOM-based preview in `source-store/ui.tsx` is a
 // separate, browser-only concern.
 
+import { normalizeSourcePayload } from './source-adapters';
+
 export type SourceFormat =
   | 'json'
   | 'rss'
@@ -291,6 +293,18 @@ export function analyzeSourcePayload(input: AnalyzeInput, now: number = Date.now
   }
   if (sourceType === 'video') {
     return { format: 'video', hasImages: true, hasText: false, hasDates: false, hasLinks: false, fields: [], detectedAt: now };
+  }
+
+  // Provider-specific HTML/XML is normalized at the source boundary before
+  // generic shape detection. This keeps capability chips aligned with what
+  // previews and widgets actually receive.
+  const normalized = normalizeSourcePayload({ payload, rawText, url });
+  if (normalized) {
+    return analyzeJson(
+      normalized.items.length > 0 ? normalized.items : normalized.data,
+      now,
+      url,
+    );
   }
 
   // Prefer a parsed object/array payload.

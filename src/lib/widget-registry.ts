@@ -49,6 +49,7 @@ export type SourceType =
 
 export interface LinkedSource {
   _id: string;
+  presetId?: string;
   name: string;
   url: string;
   sourceType: SourceType;
