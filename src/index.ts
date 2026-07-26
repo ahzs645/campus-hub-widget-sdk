@@ -1,5 +1,11 @@
 // === Widget Registry ===
 export {
+  defineWidget,
+  registerWidgetModule,
+  getWidgetManifest,
+  getAllWidgetManifests,
+  getWidgetOptionsLoader,
+  getWidgetRegistrationKind,
   registerWidget,
   getWidget,
   getAllWidgets,
@@ -8,6 +14,8 @@ export {
   registerWidgetLoader,
   getWidgetLoader,
   getAllWidgetLoaders,
+  type WidgetManifestEntry,
+  type WidgetModule,
   type WidgetDefinition,
   type WidgetComponentProps,
   type WidgetOptionsProps,
@@ -240,6 +248,14 @@ export { DISPLAY_WIDGET_COMPONENTS, preloadDisplayWidgetComponent } from './lib/
 // === Dot Matrix ===
 export { DotMatrixText, textToChars, FONT, type DotChar } from './lib/dot-matrix';
 
-// === Signaling (stub types — real implementation loaded dynamically by widgets that need it) ===
-export type { SignalingClient, SignalingConfig } from '@firstform/campus-hub-engine/src/lib/signaling-client';
-export { createSignalingClient } from '@firstform/campus-hub-engine/src/lib/signaling-client';
+// === Signaling ===
+// Types are declared here, not re-exported from the engine, so a widget
+// package can typecheck and build with only the SDK installed.
+export {
+  createSignalingClient,
+  type CreateSignalingClientOptions,
+  type SignalingClient,
+  type SignalingConfig,
+  type SignalingEventCallback,
+  type SignalingRole,
+} from './lib/signaling';

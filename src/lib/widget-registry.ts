@@ -1,5 +1,5 @@
 // Widget Registry - Central hub for all widget types
-import { ComponentType } from 'react';
+import { ComponentType, createElement, lazy, Suspense } from 'react';
 import type { IconName } from './icon-names';
 import type { WidgetOptionsSchema } from './options-schema';
 import type { SourceCapabilities, SourceRequirement } from './source-capabilities';
@@ -95,6 +95,78 @@ export interface SourceBinding {
   ) => Record<string, unknown>;
 }
 
+/**
+ * Everything about a widget except its React components.
+ *
+ * This is the half the host always needs: the editor palette, template
+ * validation, and default props all read it, on every page load. It must stay
+ * cheap — no React components, no heavy library imports, nothing that pulls a
+ * charting or protobuf library into the entry bundle.
+ *
+ * The components live behind loaders on {@link WidgetModule} so they are
+ * fetched only by a display that actually places the widget.
+ */
+export interface WidgetManifestEntry {
+  type: string;
+  name: string;
+  description: string;
+  icon: IconName;
+  minW: number;
+  minH: number;
+  maxW?: number;
+  maxH?: number;
+  defaultW: number;
+  defaultH: number;
+  tags?: string[];
+  /**
+   * Declarative options schema. When present (and no OptionsComponent), the
+   * editor auto-renders the options form via SchemaOptionsForm, and the
+   * template linter checks its `required` fields.
+   */
+  optionsSchema?: WidgetOptionsSchema;
+  defaultProps?: Record<string, unknown>;
+  createDefaultProps?: WidgetDefaultPropsFactory;
+  /** Source types this widget can consume. Omit = no source picker shown. */
+  acceptsSources?: SourceBinding[];
+}
+
+/**
+ * A widget as authored: cheap manifest plus lazy loaders for the expensive
+ * parts. This is what {@link defineWidget} produces and what a widget package
+ * exports.
+ */
+export interface WidgetModule {
+  manifest: WidgetManifestEntry;
+  /** Loads the display component. Called the first time a board renders it. */
+  load: () => Promise<{ default: ComponentType<WidgetComponentProps> }>;
+  /**
+   * Loads the bespoke options UI, if the widget has one. Editor-only, so a
+   * display never pays for it. Prefer `optionsSchema` for new widgets.
+   */
+  loadOptions?: () => Promise<{ default: ComponentType<WidgetOptionsProps> }>;
+}
+
+/**
+ * Identity helper that gives a widget package a typed, greppable declaration
+ * site. Use it in a module that imports no components:
+ *
+ * ```ts
+ * export default defineWidget({
+ *   manifest: { type: 'bus-connection', name: 'Bus Connection', ... },
+ *   load: () => import('./BusConnection'),
+ *   loadOptions: () => import('./BusConnectionOptions'),
+ * });
+ * ```
+ */
+export function defineWidget(module: WidgetModule): WidgetModule {
+  return module;
+}
+
+/**
+ * @deprecated Prefer {@link WidgetModule} via {@link defineWidget}. Registering
+ * a definition forces the component into whatever bundle reads the metadata,
+ * which for the host means every display downloads every widget.
+ */
 export interface WidgetDefinition {
   type: string;
   name: string;
@@ -125,23 +197,141 @@ export interface WidgetDefinition {
   acceptsSources?: SourceBinding[];
 }
 
-// Widget registry - widgets register themselves here
-const registry: Map<string, WidgetDefinition> = new Map();
+// --- Registries -------------------------------------------------------------
+//
+// Metadata and components are stored apart so a host can read the whole
+// catalogue without pulling a single widget's code. Legacy `registerWidget`
+// callers populate both sides at once; `registerWidgetModule` callers leave the
+// component side as loaders until something actually renders the widget.
 
-export function registerWidget(definition: WidgetDefinition): void {
-  registry.set(definition.type, definition);
+type WidgetLoader = () => Promise<{ default: ComponentType<WidgetComponentProps> }>;
+type WidgetOptionsLoader = () => Promise<{ default: ComponentType<WidgetOptionsProps> }>;
+
+const manifestRegistry = new Map<string, WidgetManifestEntry>();
+const loaderRegistry = new Map<string, WidgetLoader>();
+const optionsLoaderRegistry = new Map<string, WidgetOptionsLoader>();
+const eagerComponents = new Map<string, ComponentType<WidgetComponentProps>>();
+const eagerOptions = new Map<string, ComponentType<WidgetOptionsProps>>();
+
+// Derived values are cached so repeated reads hand back the same object and
+// component identities. Without this, a caller doing
+// `const C = getWidget(t).component` inside render would remount the widget on
+// every pass.
+const definitionCache = new Map<string, WidgetDefinition>();
+const lazyComponentCache = new Map<string, ComponentType<WidgetComponentProps>>();
+const lazyOptionsCache = new Map<string, ComponentType<WidgetOptionsProps>>();
+
+function invalidate(type: string): void {
+  definitionCache.delete(type);
+  lazyComponentCache.delete(type);
+  lazyOptionsCache.delete(type);
 }
 
+/**
+ * Wrap a loader as a plain component that suspends on its own, so callers can
+ * render it without knowing it is lazy and without providing a boundary.
+ */
+function suspending<P extends object>(
+  load: () => Promise<{ default: ComponentType<P> }>,
+): ComponentType<P> {
+  const Lazy = lazy(load);
+  return (props: P) => createElement(Suspense, { fallback: null }, createElement(Lazy, props));
+}
+
+/** Register a widget authored as a manifest plus loaders. Preferred. */
+export function registerWidgetModule(module: WidgetModule): void {
+  const { manifest, load, loadOptions } = module;
+  manifestRegistry.set(manifest.type, manifest);
+  loaderRegistry.set(manifest.type, load);
+  if (loadOptions) optionsLoaderRegistry.set(manifest.type, loadOptions);
+  invalidate(manifest.type);
+}
+
+/**
+ * @deprecated Use {@link registerWidgetModule} with {@link defineWidget}. This
+ * form holds the component in the same module as the metadata, so every host
+ * that reads the catalogue also downloads the widget.
+ */
+export function registerWidget(definition: WidgetDefinition): void {
+  const { component, OptionsComponent, ...manifest } = definition;
+  manifestRegistry.set(manifest.type, manifest);
+  eagerComponents.set(manifest.type, component);
+  if (OptionsComponent) eagerOptions.set(manifest.type, OptionsComponent);
+  // Don't clobber a real code-split loader if the package registered one.
+  if (!loaderRegistry.has(manifest.type)) {
+    loaderRegistry.set(manifest.type, async () => ({ default: component }));
+  }
+  invalidate(manifest.type);
+}
+
+function resolveComponent(type: string): ComponentType<WidgetComponentProps> | undefined {
+  const eager = eagerComponents.get(type);
+  if (eager) return eager;
+  const cached = lazyComponentCache.get(type);
+  if (cached) return cached;
+  const loader = loaderRegistry.get(type);
+  if (!loader) return undefined;
+  const wrapped = suspending(loader);
+  lazyComponentCache.set(type, wrapped);
+  return wrapped;
+}
+
+function resolveOptions(type: string): ComponentType<WidgetOptionsProps> | undefined {
+  const eager = eagerOptions.get(type);
+  if (eager) return eager;
+  const cached = lazyOptionsCache.get(type);
+  if (cached) return cached;
+  const loader = optionsLoaderRegistry.get(type);
+  if (!loader) return undefined;
+  const wrapped = suspending(loader);
+  lazyOptionsCache.set(type, wrapped);
+  return wrapped;
+}
+
+/**
+ * Full definition, including components.
+ *
+ * Reading `.component` or `.OptionsComponent` off the result is what forces a
+ * code-split widget to load, so editor surfaces should use this and displays
+ * should go through the loader registry instead.
+ */
 export function getWidget(type: string): WidgetDefinition | undefined {
-  return registry.get(type);
+  const cached = definitionCache.get(type);
+  if (cached) return cached;
+
+  const manifest = manifestRegistry.get(type);
+  if (!manifest) return undefined;
+  const component = resolveComponent(type);
+  if (!component) return undefined;
+
+  const options = resolveOptions(type);
+  const definition: WidgetDefinition = {
+    ...manifest,
+    component,
+    ...(options ? { OptionsComponent: options } : {}),
+  };
+  definitionCache.set(type, definition);
+  return definition;
 }
 
 export function getAllWidgets(): WidgetDefinition[] {
-  return Array.from(registry.values());
+  return [...manifestRegistry.keys()]
+    .map((type) => getWidget(type))
+    .filter((definition): definition is WidgetDefinition => definition !== undefined);
+}
+
+/** Metadata only — never causes a widget's code to load. */
+export function getWidgetManifest(type: string): WidgetManifestEntry | undefined {
+  return manifestRegistry.get(type);
+}
+
+/** Metadata for every registered widget. Safe to call on a display. */
+export function getAllWidgetManifests(): WidgetManifestEntry[] {
+  return Array.from(manifestRegistry.values());
 }
 
 export function buildWidgetInitialProps(
-  definition: Pick<WidgetDefinition, 'defaultProps' | 'createDefaultProps'>,
+  definition: Pick<WidgetManifestEntry, 'defaultProps' | 'createDefaultProps'>,
 ): Record<string, unknown> {
   return {
     ...(definition.defaultProps ?? {}),
@@ -150,17 +340,18 @@ export function buildWidgetInitialProps(
 }
 
 export function getWidgetComponent(type: string): ComponentType<WidgetComponentProps> | null {
-  const widget = registry.get(type);
-  return widget?.component ?? null;
+  return resolveComponent(type) ?? null;
 }
 
 // --- Lazy loader registry ---
 
-type WidgetLoader = () => Promise<{ default: ComponentType<WidgetComponentProps> }>;
-const loaderRegistry = new Map<string, WidgetLoader>();
-
+/**
+ * @deprecated Register the loader together with its metadata via
+ * {@link registerWidgetModule}.
+ */
 export function registerWidgetLoader(type: string, loader: WidgetLoader): void {
   loaderRegistry.set(type, loader);
+  invalidate(type);
 }
 
 export function getWidgetLoader(type: string): WidgetLoader | undefined {
@@ -169,4 +360,23 @@ export function getWidgetLoader(type: string): WidgetLoader | undefined {
 
 export function getAllWidgetLoaders(): Map<string, WidgetLoader> {
   return loaderRegistry;
+}
+
+export function getWidgetOptionsLoader(type: string): WidgetOptionsLoader | undefined {
+  return optionsLoaderRegistry.get(type);
+}
+
+/**
+ * How a widget was registered.
+ *
+ * `'eager'` means a component instance was handed to {@link registerWidget},
+ * so the component and its dependencies are in whatever bundle registered it.
+ * `'lazy'` means only a manifest and loaders were registered.
+ *
+ * Exposed so a host can assert its own widgets are all code-split — the
+ * regression is invisible at runtime and only shows up as bundle weight.
+ */
+export function getWidgetRegistrationKind(type: string): 'eager' | 'lazy' | undefined {
+  if (!manifestRegistry.has(type)) return undefined;
+  return eagerComponents.has(type) ? 'eager' : 'lazy';
 }
