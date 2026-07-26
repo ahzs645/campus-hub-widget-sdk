@@ -9,6 +9,7 @@ import {
   getWidgetComponent,
   getWidgetLoader,
   getWidgetManifest,
+  getWidgetRegistrationKind,
   getWidgetOptionsLoader,
   registerWidget,
   registerWidgetModule,
@@ -165,5 +166,19 @@ describe('lookups for unknown types', () => {
     expect(getWidgetComponent('nope')).toBeNull();
     expect(getWidgetLoader('nope')).toBeUndefined();
     expect(getWidgetOptionsLoader('nope')).toBeUndefined();
+  });
+});
+
+describe('getWidgetRegistrationKind', () => {
+  it('distinguishes eager legacy registration from lazy modules', () => {
+    registerWidgetModule(defineWidget({
+      manifest: manifest('kind-lazy'),
+      load: async () => ({ default: Lit }),
+    }));
+    registerWidget({ ...manifest('kind-eager'), component: Lit });
+
+    expect(getWidgetRegistrationKind('kind-lazy')).toBe('lazy');
+    expect(getWidgetRegistrationKind('kind-eager')).toBe('eager');
+    expect(getWidgetRegistrationKind('kind-unknown')).toBeUndefined();
   });
 });

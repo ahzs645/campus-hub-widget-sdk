@@ -5,6 +5,7 @@ export {
   getWidgetManifest,
   getAllWidgetManifests,
   getWidgetOptionsLoader,
+  getWidgetRegistrationKind,
   registerWidget,
   getWidget,
   getAllWidgets,
@@ -247,6 +248,29 @@ export { DISPLAY_WIDGET_COMPONENTS, preloadDisplayWidgetComponent } from './lib/
 // === Dot Matrix ===
 export { DotMatrixText, textToChars, FONT, type DotChar } from './lib/dot-matrix';
 
-// === Signaling (stub types — real implementation loaded dynamically by widgets that need it) ===
-export type { SignalingClient, SignalingConfig } from '@firstform/campus-hub-engine/src/lib/signaling-client';
-export { createSignalingClient } from '@firstform/campus-hub-engine/src/lib/signaling-client';
+// === Signaling ===
+//
+// The implementation lives in the engine, which depends on this SDK — a static
+// re-export would make the cycle real and force anyone importing the SDK to
+// have the engine installed. That breaks standalone widget packages, which is
+// the entire point of the SDK being separately consumable.
+//
+// Types are erased, so importing them costs nothing. The factory resolves the
+// engine on first call instead.
+export type {
+  SignalingClient,
+  SignalingConfig,
+} from '@firstform/campus-hub-engine/src/lib/signaling-client';
+
+export async function createSignalingClient(
+  ...args: Parameters<
+    typeof import('@firstform/campus-hub-engine/src/lib/signaling-client')['createSignalingClient']
+  >
+): Promise<
+  ReturnType<
+    typeof import('@firstform/campus-hub-engine/src/lib/signaling-client')['createSignalingClient']
+  >
+> {
+  const mod = await import('@firstform/campus-hub-engine/src/lib/signaling-client');
+  return mod.createSignalingClient(...args);
+}

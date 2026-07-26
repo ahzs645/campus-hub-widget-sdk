@@ -365,3 +365,18 @@ export function getAllWidgetLoaders(): Map<string, WidgetLoader> {
 export function getWidgetOptionsLoader(type: string): WidgetOptionsLoader | undefined {
   return optionsLoaderRegistry.get(type);
 }
+
+/**
+ * How a widget was registered.
+ *
+ * `'eager'` means a component instance was handed to {@link registerWidget},
+ * so the component and its dependencies are in whatever bundle registered it.
+ * `'lazy'` means only a manifest and loaders were registered.
+ *
+ * Exposed so a host can assert its own widgets are all code-split — the
+ * regression is invisible at runtime and only shows up as bundle weight.
+ */
+export function getWidgetRegistrationKind(type: string): 'eager' | 'lazy' | undefined {
+  if (!manifestRegistry.has(type)) return undefined;
+  return eagerComponents.has(type) ? 'eager' : 'lazy';
+}
