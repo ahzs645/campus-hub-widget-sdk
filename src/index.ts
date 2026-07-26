@@ -1,5 +1,10 @@
 // === Widget Registry ===
 export {
+  defineWidget,
+  registerWidgetModule,
+  getWidgetManifest,
+  getAllWidgetManifests,
+  getWidgetOptionsLoader,
   registerWidget,
   getWidget,
   getAllWidgets,
@@ -8,6 +13,8 @@ export {
   registerWidgetLoader,
   getWidgetLoader,
   getAllWidgetLoaders,
+  type WidgetManifestEntry,
+  type WidgetModule,
   type WidgetDefinition,
   type WidgetComponentProps,
   type WidgetOptionsProps,
