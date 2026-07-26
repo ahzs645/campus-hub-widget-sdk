@@ -101,6 +101,12 @@ declarations with different ranges make the installer produce two copies, and
 the nested one wins for your package — the change you thought you shipped
 silently does not run.
 
+The SDK is self-contained: it has no runtime or type dependency on the host
+engine, so your package installs, typechecks and builds with the SDK alone.
+The one exception is `createSignalingClient`, whose implementation the host
+provides — it resolves at runtime and throws a clear error outside a Campus
+Hub host. Its types come from the SDK, so it still typechecks standalone.
+
 ---
 
 ## Local development against a host
