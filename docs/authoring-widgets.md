@@ -5,6 +5,11 @@ monorepo or in a repository you own — the contract is the same either way, and
 so is the integration step: the host installs your package and your widget
 shows up.
 
+There is a second delivery path that skips the host build entirely: compile
+your repo to release assets and let a workspace install them by URL at
+runtime. Same authoring API, different shipping — see
+[authoring-remote-widgets.md](./authoring-remote-widgets.md).
+
 ---
 
 ## The contract
