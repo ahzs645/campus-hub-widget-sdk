@@ -248,6 +248,23 @@ export { DISPLAY_WIDGET_COMPONENTS, preloadDisplayWidgetComponent } from './lib/
 // === Dot Matrix ===
 export { DotMatrixText, textToChars, FONT, type DotChar } from './lib/dot-matrix';
 
+// === Remote Widgets ===
+export {
+  REMOTE_WIDGET_FORMAT_VERSION,
+  REMOTE_WIDGET_RUNTIME_VERSION,
+  REMOTE_WIDGET_RUNTIME_GLOBAL,
+  REMOTE_WIDGET_EXTERNALS,
+  validateRemoteWidgetManifest,
+  type RemoteWidgetManifest,
+} from './lib/remote-widget-manifest';
+
+export {
+  installRemoteWidgetRuntime,
+  loadRemoteWidgetBundle,
+  type RemoteWidgetRuntime,
+  type LoadRemoteWidgetBundleOptions,
+} from './lib/remote-widgets';
+
 // === Signaling ===
 // Types are declared here, not re-exported from the engine, so a widget
 // package can typecheck and build with only the SDK installed.

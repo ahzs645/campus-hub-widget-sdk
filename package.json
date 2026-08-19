@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./vite": "./src/vite/discover-widgets.ts",
+    "./vite-remote": "./src/vite/remote-widget-build.ts",
     "./src/*": "./src/*"
   },
   "files": ["src"],
