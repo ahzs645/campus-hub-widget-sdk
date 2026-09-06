@@ -1,5 +1,8 @@
 import { ReactNode } from 'react';
-import { useWidgetOptionsSurface } from '../../lib/widget-options-surface';
+import {
+  useHostRendersPreview,
+  useWidgetOptionsSurface,
+} from '../../lib/widget-options-surface';
 
 interface OptionsSectionProps {
   /** Section heading text */
@@ -63,8 +66,11 @@ interface OptionsPreviewProps {
  */
 export function OptionsPreview({ title = 'Preview', children, className = '' }: OptionsPreviewProps) {
   const surface = useWidgetOptionsSurface();
+  const hostRendersPreview = useHostRendersPreview();
 
-  if (surface === 'gallery') {
+  // The gallery has no room for one, and an editor that previews the real
+  // widget itself does not need the widget's own approximation of it.
+  if (surface === 'gallery' || hostRendersPreview) {
     return null;
   }
 
