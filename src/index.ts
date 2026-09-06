@@ -28,6 +28,8 @@ export {
 export {
   WidgetOptionsSurfaceProvider,
   useWidgetOptionsSurface,
+  HostRendersPreviewProvider,
+  useHostRendersPreview,
   shouldHideGalleryControl,
   MediaPickerProvider,
   useMediaPicker,

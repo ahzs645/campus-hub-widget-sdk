@@ -94,6 +94,23 @@ export function useWidgetOptionsSurface() {
   return useContext(WidgetOptionsSurfaceContext);
 }
 
+// ── Host-rendered preview ──
+// The editor renders one live preview of the real widget for every widget it
+// edits. Inside this provider a widget's own OptionsPreview stands down, so a
+// widget that still carries a hand-written mock-up never stacks two previews
+// in one panel — and no widget has to know whether the host previews it.
+const HostPreviewContext = createContext(false);
+
+export function HostRendersPreviewProvider({ children }: { children: ReactNode }) {
+  return (
+    <HostPreviewContext.Provider value={true}>{children}</HostPreviewContext.Provider>
+  );
+}
+
+export function useHostRendersPreview() {
+  return useContext(HostPreviewContext);
+}
+
 // ── Media picker bridge ──
 // The host app owns the Media library (and its auth), so it injects a picker
 // through this context. Widget option inputs (FormInput with `media`) call it
