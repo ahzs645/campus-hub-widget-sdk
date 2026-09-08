@@ -142,6 +142,50 @@ export function useMediaPicker() {
   return useContext(MediaPickerContext);
 }
 
+// ── Nested widget editor bridge ──
+// Container widgets (the Widget Stack today) hold other widgets as props.
+// Their options UI should not have to re-implement the editor for each
+// child — schema forms, data-source linking, the live preview. Instead the
+// host editor injects an opener through this context: the container asks
+// for one child to be edited, the host drills into its full editor for that
+// widget type, and hands the edited props back when the user applies them.
+export interface NestedWidgetEditRequest {
+  /** Registered type of the child widget to edit. */
+  widgetType: string;
+  /** The child's current props. */
+  data: Record<string, unknown>;
+  /** Where the child sits in its container, e.g. "Widget 2 of 4". */
+  context?: string;
+  /** Receives the edited props when the user applies the nested editor. */
+  onApply: (data: Record<string, unknown>) => void;
+}
+
+export type NestedWidgetEditorFn = (request: NestedWidgetEditRequest) => void;
+
+const NestedWidgetEditorContext = createContext<NestedWidgetEditorFn | null>(null);
+
+export function NestedWidgetEditorProvider({
+  value,
+  children,
+}: {
+  value: NestedWidgetEditorFn | null;
+  children: ReactNode;
+}) {
+  return (
+    <NestedWidgetEditorContext.Provider value={value}>
+      {children}
+    </NestedWidgetEditorContext.Provider>
+  );
+}
+
+/**
+ * The host's nested editor opener, or null when the surface cannot drill in
+ * (the gallery, or an older host). Callers fall back to inline options.
+ */
+export function useNestedWidgetEditor() {
+  return useContext(NestedWidgetEditorContext);
+}
+
 export function shouldHideGalleryControl({
   label,
   name,
