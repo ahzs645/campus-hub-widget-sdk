@@ -33,9 +33,13 @@ export {
   shouldHideGalleryControl,
   MediaPickerProvider,
   useMediaPicker,
+  NestedWidgetEditorProvider,
+  useNestedWidgetEditor,
   type WidgetOptionsSurface,
   type GalleryControlMetadata,
   type MediaPickRequest,
+  type NestedWidgetEditRequest,
+  type NestedWidgetEditorFn,
 } from './lib/widget-options-surface';
 
 // === Data Utilities ===
