@@ -36,6 +36,67 @@ export const formatTime = (value: Date | null): string => {
   return value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
+/** Upper bound on pages followed for a paginated JSON feed per refresh. */
+const MAX_JSON_PAGES = 10;
+
+const parseDate = (value: unknown): Date | null => {
+  if (typeof value !== 'string' || !value) return null;
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? null : date;
+};
+
+/**
+ * Map raw JSON event items to CalendarEvents, dropping those that have ended
+ * before `todayStartMs`. An event still in progress (started earlier, ends
+ * today or later) is kept.
+ */
+function normalizeJsonEvents(
+  list: Record<string, unknown>[],
+  metadata: Record<string, Record<string, unknown>>,
+  todayStartMs: number,
+  indexOffset: number,
+): CalendarEvent[] {
+  const events: CalendarEvent[] = [];
+  list.forEach((item, i) => {
+    const index = indexOffset + i;
+    if (item.date && typeof item.date === 'string' && !/^\d{4}-/.test(item.date)) {
+      events.push({ ...item, id: (item.id as string | number) ?? `${item.title}-${index}` } as unknown as CalendarEvent);
+      return;
+    }
+    const startObj = parseDate(item.startDate ?? item.start_date ?? item.start ?? item.date);
+    const endObj = parseDate(item.endDate ?? item.end_date ?? item.end);
+    const lastMs = Math.max(startObj?.getTime() ?? -Infinity, endObj?.getTime() ?? -Infinity);
+    if (startObj && lastMs < todayStartMs) return;
+    const itemId = (item.id as string | number) ?? `${item.title}-${index}`;
+    const meta = metadata[String(itemId)];
+    events.push({
+      id: itemId,
+      title: item.title as string,
+      date: formatDate(startObj),
+      time: startObj ? formatTime(startObj) : '',
+      location: (meta?.location as string) || (item.location as string) || '',
+      category: (item.category as string) ?? undefined,
+      color: (item.color as string) ?? undefined,
+      _sortTs: startObj ? startObj.getTime() : Infinity,
+    });
+  });
+  return events;
+}
+
+/** URL of the next page when the response advertises one via `pagination`. */
+function nextPageUrl(currentUrl: string, data: unknown): string | null {
+  if (!data || Array.isArray(data) || typeof data !== 'object') return null;
+  const pagination = (data as { pagination?: { hasMore?: unknown; nextPage?: unknown } }).pagination;
+  if (!pagination?.hasMore || typeof pagination.nextPage !== 'number') return null;
+  try {
+    const url = new URL(currentUrl);
+    url.searchParams.set('page', String(pagination.nextPage));
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 export function useEvents(options: UseEventsOptions): CalendarEvent[] {
   const {
     apiUrl,
@@ -106,44 +167,41 @@ export function useEvents(options: UseEventsOptions): CalendarEvent[] {
           return;
         }
 
-        // JSON source
-        const { data } = await fetchJsonWithCache<Record<string, unknown>>(fetchUrl, {
-          cacheKey: buildCacheKey('events-json', fetchUrl),
-          ttlMs: cacheTtlSeconds * 1000,
-        });
-        const list = Array.isArray(data) ? data : (data.events as Record<string, unknown>[] | undefined);
-        // eventMetadata is keyed by event ID and may contain location, organization, etc.
-        const metadata: Record<string, Record<string, unknown>> = (!Array.isArray(data) && data.eventMetadata ? data.eventMetadata as Record<string, Record<string, unknown>> : {});
-        if (Array.isArray(list) && isMounted) {
-          const normalized = list.map((item, index) => {
-            if (item.date && typeof item.date === 'string' && !/^\d{4}-/.test(item.date)) {
-              return { ...item, id: (item.id as string | number) ?? `${item.title}-${index}` } as unknown as CalendarEvent;
-            }
-            const rawStart = (item.startDate ?? item.start_date ?? item.start ?? item.date) as string | undefined;
-            const startObj = rawStart ? new Date(rawStart) : null;
-            const itemId = (item.id as string | number) ?? `${item.title}-${index}`;
-            const meta = metadata[String(itemId)];
-            return {
-              id: itemId,
-              title: item.title as string,
-              date: formatDate(startObj),
-              time: startObj && !isNaN(startObj.getTime()) ? formatTime(startObj) : '',
-              location: (meta?.location as string) || (item.location as string) || '',
-              category: (item.category as string) ?? undefined,
-              color: (item.color as string) ?? undefined,
-              _sortTs: startObj && !isNaN(startObj.getTime()) ? startObj.getTime() : Infinity,
-            } satisfies CalendarEvent;
+        // JSON source. Paginated feeds (e.g. Campus Manager's
+        // `pagination.nextPage`) are followed until enough upcoming events are
+        // found, since early pages can hold only past occurrences.
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const collected: CalendarEvent[] = [];
+        let itemsSeen = 0;
+        let pageUrl: string | null = apiUrl;
+        for (let page = 0; pageUrl && page < MAX_JSON_PAGES; page += 1) {
+          const fetchUrl: string = useCorsProxy ? buildProxyUrl(pageUrl) : pageUrl;
+          const { data }: { data: Record<string, unknown> } = await fetchJsonWithCache<Record<string, unknown>>(fetchUrl, {
+            cacheKey: buildCacheKey('events-json', fetchUrl),
+            ttlMs: cacheTtlSeconds * 1000,
           });
-          // Filter out past events (keep today and future)
-          const todayStart = new Date();
-          todayStart.setHours(0, 0, 0, 0);
-          const upcoming = normalized.filter(e => !e._sortTs || e._sortTs === Infinity || e._sortTs >= todayStart.getTime());
-          upcoming.sort((a, b) => (a._sortTs ?? Infinity) - (b._sortTs ?? Infinity));
-          const filtered = selectedCategories && selectedCategories.length > 0
-            ? upcoming.filter(e => !e.category || selectedCategories.includes(e.category))
-            : upcoming;
-          setEvents(filtered.slice(0, maxItems));
+          const list = Array.isArray(data) ? data : (data.events as Record<string, unknown>[] | undefined);
+          // Leave the current events in place when the feed isn't a list.
+          if (!Array.isArray(list)) {
+            if (page === 0) return;
+            break;
+          }
+          // eventMetadata is keyed by event ID and may contain location, organization, etc.
+          const metadata: Record<string, Record<string, unknown>> = (!Array.isArray(data) && data.eventMetadata ? data.eventMetadata as Record<string, Record<string, unknown>> : {});
+          collected.push(...normalizeJsonEvents(list, metadata, todayStart.getTime(), itemsSeen));
+          itemsSeen += list.length;
+          const upcomingCount = selectedCategories && selectedCategories.length > 0
+            ? collected.filter(e => !e.category || selectedCategories.includes(e.category)).length
+            : collected.length;
+          pageUrl = upcomingCount < maxItems ? nextPageUrl(pageUrl, data) : null;
         }
+        if (!isMounted) return;
+        collected.sort((a, b) => (a._sortTs ?? Infinity) - (b._sortTs ?? Infinity));
+        const filtered = selectedCategories && selectedCategories.length > 0
+          ? collected.filter(e => !e.category || selectedCategories.includes(e.category))
+          : collected;
+        setEvents(filtered.slice(0, maxItems));
       } catch (error) {
         console.error('Failed to fetch events:', error);
       }
