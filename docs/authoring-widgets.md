@@ -69,6 +69,16 @@ It must not import your component, or any library your component uses.
 
 ---
 
+## Host-managed source references
+
+For a widget that reads normalized data from the host, an `acceptsSources`
+binding can set `mode: 'reference'`. The editor then stores
+`__sourceRef: { sourceId, propName, mode: 'reference' }` without copying the
+provider URL into props. `propName` remains the binding's stable identifier.
+Use `applySource` for other safe configuration defaults. The host must authorize
+the source ID and return only the fields the widget needs; a source reference
+does not itself grant access. Omit `mode` for existing URL-based bindings.
+
 ## Why the split matters
 
 `registerWidget` (the old API) takes the metadata and the component in one

@@ -48,6 +48,8 @@ export type SourceType =
   | 'vimeo';
 
 export interface LinkedSource {
+  /** Host-managed webhook ingestion; write credentials never enter widget props. */
+  pushEnabled?: boolean;
   _id: string;
   presetId?: string;
   name: string;
@@ -63,6 +65,8 @@ export interface LinkedSource {
 }
 
 export interface SourceBinding {
+  /** Reference bindings store only a source ID; provider URLs remain on the host. */
+  mode?: 'url' | 'reference';
   /** Which prop receives the source URL (e.g. 'url', 'feedUrl') */
   propName: string;
   /** Accepted source types */
