@@ -46,7 +46,7 @@ export default defineWidget({
     type: 'tide-clock',            // globally unique; prefix it if unsure
     name: 'Tide Clock',
     description: 'Next high and low tide for a station',
-    icon: 'waves',
+    icon: 'droplets',              // an IconName from the SDK
     minW: 2, minH: 2, defaultW: 3, defaultH: 3,
     defaultProps: { stationId: '', units: 'metric' },
   },
@@ -66,6 +66,25 @@ registerWidgetModule(tideClock);
 **3. Keep the manifest module cheap.** It is loaded by every host that reads
 the catalogue — the editor palette, template validation — on every page load.
 It must not import your component, or any library your component uses.
+
+---
+
+## Demo, live and unavailable states
+
+Displays run unattended in public. A widget must never present made-up data as
+if it were real, so every widget that loads data distinguishes three states:
+
+| State | When | Show |
+| --- | --- | --- |
+| **Demo** | No source is configured | Built-in sample data, always with a visible "Demo" badge |
+| **Live** | A configured source has loaded | That source's data. Keep it as last-good data, keyed by the source, so a failed refresh leaves it on screen (with your error line or "Updated" time) and a config change never shows the previous source's data |
+| **Unavailable** | A configured source failed and there is no last-good data | `SourceUnavailable` from `@firstform/campus-hub-widgets-shared` (or an equivalent empty state) — **never** the demo data |
+
+A configured source starts in a loading state, not with demo data. An empty
+live result ("no events today") is live data, not a reason to fall back to the
+demo set. `useEventsState` implements this contract for calendar feeds and
+returns `isDemo`, `loading`, `error` and `lastUpdated`; `fetchJsonWithCache`
+reports `stale: true` when it served an expired entry after a failed request.
 
 ---
 
@@ -119,8 +138,13 @@ silently does not run.
 The SDK is self-contained: it has no runtime or type dependency on the host
 engine, so your package installs, typechecks and builds with the SDK alone.
 The one exception is `createSignalingClient`, whose implementation the host
-provides — it resolves at runtime and throws a clear error outside a Campus
+provides: the host engine calls `registerSignalingImplementation` when it
+loads, and `createSignalingClient` rejects with a clear error outside a Campus
 Hub host. Its types come from the SDK, so it still typechecks standalone.
+
+Widget `type`s share one registry. The last `registerWidgetModule` call for a
+type wins; replacing a type with a different loader logs a warning unless the
+caller passes `{ replace: true }`, which hosts use for deliberate overrides.
 
 ---
 
@@ -179,3 +203,4 @@ package is empty.
 - [ ] `prepare` script if shipping from git with a gitignored build directory
 - [ ] Renders correctly at its `minW`/`minH` — boards are laid out on a 12×8 grid
 - [ ] No network calls without a timeout; displays run unattended for months
+- [ ] Demo data only when unconfigured, with a Demo badge; a configured source that fails shows last-good data or `SourceUnavailable`

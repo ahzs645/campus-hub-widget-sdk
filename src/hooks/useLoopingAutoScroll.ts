@@ -1,3 +1,4 @@
+'use client';
 import { useEffect, useRef, type DependencyList, type RefObject } from 'react';
 
 const START_DELAY_MS = 1800;

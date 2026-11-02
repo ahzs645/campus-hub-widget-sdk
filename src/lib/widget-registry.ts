@@ -242,12 +242,40 @@ function suspending<P extends object>(
   return (props: P) => createElement(Suspense, { fallback: null }, createElement(Lazy, props));
 }
 
-/** Register a widget authored as a manifest plus loaders. Preferred. */
-export function registerWidgetModule(module: WidgetModule): void {
+export interface RegisterWidgetModuleOptions {
+  /**
+   * Set when deliberately replacing a widget type another package registered
+   * (e.g. a host overriding a package widget). Suppresses the warning.
+   */
+  replace?: boolean;
+}
+
+/**
+ * Register a widget authored as a manifest plus loaders. Preferred.
+ *
+ * The last registration of a type wins: registering a type again replaces its
+ * manifest and loaders (and any legacy eager component). Replacing a type
+ * with a *different* loader logs a warning unless `options.replace` is set,
+ * so accidental `type` collisions between packages are visible.
+ */
+export function registerWidgetModule(
+  module: WidgetModule,
+  options: RegisterWidgetModuleOptions = {},
+): void {
   const { manifest, load, loadOptions } = module;
+  const previous = loaderRegistry.get(manifest.type);
+  if (previous && previous !== load && !options.replace) {
+    console.warn(
+      `[campus-hub] Widget type "${manifest.type}" was registered again; the later registration replaces the earlier one.`,
+    );
+  }
   manifestRegistry.set(manifest.type, manifest);
   loaderRegistry.set(manifest.type, load);
   if (loadOptions) optionsLoaderRegistry.set(manifest.type, loadOptions);
+  else optionsLoaderRegistry.delete(manifest.type);
+  // A legacy eager registration would otherwise shadow this module.
+  eagerComponents.delete(manifest.type);
+  eagerOptions.delete(manifest.type);
   invalidate(manifest.type);
 }
 

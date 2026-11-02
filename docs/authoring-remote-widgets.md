@@ -82,9 +82,10 @@ in the picture, *everything* your widget uses beyond react and the SDK gets
   whole file before your widget first renders.
 - **No `react-dom/client`.** The host owns the React root. Portals via
   `react-dom` are available.
-- **`type` collisions are refused at install time** within a workspace, and
-  first registration wins warnings in the console — prefix your types if the
-  name is generic.
+- **`type` collisions are refused at install time** within a workspace. At
+  runtime the last registration of a type wins and a console warning names
+  the replaced type — prefix your types if the name is generic. Loading an
+  upgraded bundle in the same session replaces the earlier version.
 
 ## Releasing from GitHub Actions
 

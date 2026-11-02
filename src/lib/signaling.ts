@@ -47,26 +47,47 @@ export interface CreateSignalingClientOptions {
   name?: string;
   currentConfig?: string;
   autoReconnect?: boolean;
+  /**
+   * Shared secret for the signaling server. Sent as the Socket.IO handshake
+   * `auth.token`, which the Campus Hub signaling server requires.
+   */
+  authToken?: string;
 }
 
-/** Shape the engine module is expected to expose. */
-interface SignalingModule {
-  createSignalingClient: (
-    serverUrl: string,
-    role: SignalingRole,
-    displayId: string,
-    options?: CreateSignalingClientOptions,
-  ) => SignalingClient;
-}
+/** Factory the host's engine provides; see {@link registerSignalingImplementation}. */
+export type SignalingClientFactory = (
+  serverUrl: string,
+  role: SignalingRole,
+  displayId: string,
+  options?: CreateSignalingClientOptions,
+) => SignalingClient;
 
-const ENGINE_SIGNALING = '@firstform/campus-hub-engine/src/lib/signaling-client';
+let registeredFactory: SignalingClientFactory | null = null;
 
 /**
- * Resolve and construct a signaling client.
+ * Called by the host engine (`@firstform/campus-hub-engine` registers itself
+ * when its entry module loads) to supply the signaling implementation.
  *
- * Async because the engine is loaded on demand: a static import would put the
- * whole engine in the bundle of every widget package, and would make the
- * SDK↔engine dependency cycle real at module-evaluation time.
+ * The SDK used to `import()` the engine by a computed specifier, but bundlers
+ * cannot rewrite a computed specifier, so production builds shipped a bare
+ * `import("@firstform/campus-hub-engine/...")` that browsers can never
+ * resolve. Registration keeps the SDK free of an engine dependency without
+ * relying on the bundler. A later registration replaces an earlier one.
+ */
+export function registerSignalingImplementation(factory: SignalingClientFactory | null): void {
+  registeredFactory = factory;
+}
+
+/** Whether a host has registered a signaling implementation. */
+export function hasSignalingImplementation(): boolean {
+  return registeredFactory !== null;
+}
+
+/**
+ * Construct a signaling client using the implementation the host registered.
+ *
+ * Async for compatibility with earlier SDK versions, which loaded the engine
+ * on demand. Rejects when no host engine has registered an implementation.
  */
 export async function createSignalingClient(
   serverUrl: string,
@@ -74,19 +95,11 @@ export async function createSignalingClient(
   displayId: string,
   options: CreateSignalingClientOptions = {},
 ): Promise<SignalingClient> {
-  let mod: SignalingModule;
-  try {
-    // @ts-ignore -- Deliberately unresolved at compile time. The specifier is
-    // static so bundlers still emit a chunk for it, but the SDK must typecheck
-    // in a project that has no engine installed. The contract is pinned by
-    // SignalingModule above and by the engine's conformance test.
-    mod = (await import(/* @vite-ignore */ ENGINE_SIGNALING)) as SignalingModule;
-  } catch (cause) {
+  if (!registeredFactory) {
     throw new Error(
       'Signaling requires @firstform/campus-hub-engine, which is provided by the ' +
         'host application. Widgets using it only run inside a Campus Hub host.',
-      { cause },
     );
   }
-  return mod.createSignalingClient(serverUrl, role, displayId, options);
+  return registeredFactory(serverUrl, role, displayId, options);
 }

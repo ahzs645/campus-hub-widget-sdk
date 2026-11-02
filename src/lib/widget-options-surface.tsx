@@ -1,3 +1,4 @@
+'use client';
 import { createContext, useContext, type ReactNode } from 'react';
 
 export type WidgetOptionsSurface = 'editor' | 'gallery';
