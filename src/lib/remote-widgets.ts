@@ -75,10 +75,11 @@ const loadedBundles = new Map<string, Promise<string[]>>();
 
 /**
  * Load a remote widget bundle by script injection, installing the runtime
- * global first. Resolves with the widget types the bundle newly registered.
- * Loading is deduplicated by `key`; a failed load is forgotten so it can be
- * retried. Registering over an existing type logs a warning and wins — an
- * upgrade within one session behaves like the reload that normally follows.
+ * global first. Resolves with the widget types the bundle registered — new
+ * types and types it replaced. Loading is deduplicated by `key`; a failed load
+ * is forgotten so it can be retried. The last registration of a type wins
+ * (see `registerWidgetModule`), so an upgraded bundle loaded within one
+ * session replaces the earlier version, like the reload that normally follows.
  */
 export function loadRemoteWidgetBundle(
   options: LoadRemoteWidgetBundleOptions,
@@ -89,23 +90,25 @@ export function loadRemoteWidgetBundle(
 
   const load = new Promise<string[]>((resolve, reject) => {
     installRemoteWidgetRuntime();
-    const before = new Set(getAllWidgetManifests().map((m) => m.type));
+    const before = new Map(getAllWidgetManifests().map((m) => [m.type, m]));
 
     const script = document.createElement('script');
     script.src = options.url;
     script.async = true;
     script.onload = () => {
       script.remove();
-      const added: string[] = [];
+      // A type counts as registered by this bundle when it is new, or when its
+      // manifest object changed (the bundle replaced it, e.g. an upgrade).
+      const registered: string[] = [];
       for (const manifest of getAllWidgetManifests()) {
-        if (!before.has(manifest.type)) added.push(manifest.type);
+        if (before.get(manifest.type) !== manifest) registered.push(manifest.type);
       }
-      if (added.length === 0) {
+      if (registered.length === 0) {
         console.warn(
-          `Remote widget bundle registered no new widget types (already registered, or not a widget bundle?): ${options.url}`,
+          `Remote widget bundle registered no widget types (not a widget bundle?): ${options.url}`,
         );
       }
-      resolve(added);
+      resolve(registered);
     };
     script.onerror = () => {
       script.remove();

@@ -83,7 +83,9 @@ bytes** in the entry chunk.
 
 ### Widget registry
 - `defineWidget` — declare a widget as manifest + loaders
-- `registerWidgetModule` — register that declaration
+- `registerWidgetModule` — register that declaration. The last registration of a
+  `type` wins; replacing a type with a different loader logs a warning unless
+  you pass `{ replace: true }` (for deliberate host overrides)
 - `getWidgetManifest`, `getAllWidgetManifests` — metadata only; never loads widget code
 - `getWidget`, `getAllWidgets`, `getWidgetComponent` — full definitions, including components
 - `getWidgetLoader`, `getWidgetOptionsLoader`, `getAllWidgetLoaders` — the loaders
@@ -104,17 +106,26 @@ bytes** in the entry chunk.
 
 ### Hooks
 - `useFitScale` / `useAdaptiveFitScale` — scale content to fit container
-- `useEvents` — fetch and parse calendar events from JSON/iCal/RSS
+- `useEventsState` — fetch and parse calendar events from JSON/iCal/RSS, with
+  `isDemo`, `loading`, `error` and `lastUpdated` for the demo/live/unavailable
+  states (see the authoring guide)
+- `useEvents` — the same events as a plain list (empty, never the defaults,
+  while a configured source is loading or has failed)
 
 ### Data utilities
-- `fetchJsonWithCache` / `fetchTextWithCache` — cached fetch with stale-while-revalidate
+- `fetchJsonWithCache` / `fetchTextWithCache` — cached fetch, *stale-if-error*:
+  a fresh entry skips the network; otherwise the request is tried (15 s timeout
+  by default, `timeoutMs` to change) and an expired entry is returned with
+  `stale: true` only if it fails
 - `buildCacheKey`, `buildProxyUrl`, `isEntryFresh`
 - `parseICal`, `parseRss` — feed parsers
 
 ### Signaling
 - `createSignalingClient` — async; the implementation is provided by the host
-  engine and resolved on first call. Its types are declared in the SDK, so a
-  widget using it still typechecks standalone.
+  engine, which calls `registerSignalingImplementation` when it loads. Rejects
+  with a clear error when no host has registered one. Pass `authToken` for a
+  signaling server that requires a handshake token. Its types are declared in
+  the SDK, so a widget using it still typechecks standalone.
 
 ### UI components
 - `AppIcon` — icon component using lucide-react
@@ -124,5 +135,5 @@ bytes** in the entry chunk.
 
 Reusable, themed UI building blocks for widget components. All are optional —
 widgets can still use raw elements when they need custom behavior. See
-[`docs/widget-primitives.md`](../../docs/widget-primitives.md) for full
-documentation with examples.
+[`docs/widget-primitives.md`](https://github.com/ahzs645/campus-hub-cloud/blob/main/docs/widget-primitives.md)
+in the cloud repo for full documentation with examples.

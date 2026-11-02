@@ -9,6 +9,25 @@ export interface FetchCacheOptions {
   ttlMs?: number;
   allowStale?: boolean;
   fetchInit?: RequestInit;
+  /**
+   * Abort the network request after this many milliseconds (default 15 000).
+   * Pass 0 to disable. Combined with any `fetchInit.signal`.
+   */
+  timeoutMs?: number;
+}
+
+/** Default request timeout for {@link fetchTextWithCache} / {@link fetchJsonWithCache}. */
+export const DEFAULT_FETCH_TIMEOUT_MS = 15_000;
+
+function withTimeout(init: RequestInit | undefined, timeoutMs: number): RequestInit | undefined {
+  if (!timeoutMs || timeoutMs <= 0 || typeof AbortSignal === 'undefined' || typeof AbortSignal.timeout !== 'function') {
+    return init;
+  }
+  const timeout = AbortSignal.timeout(timeoutMs);
+  const existing = init?.signal;
+  if (!existing) return { ...init, signal: timeout };
+  if (typeof AbortSignal.any === 'function') return { ...init, signal: AbortSignal.any([existing, timeout]) };
+  return init;
 }
 
 const CACHE_PREFIX = 'campus-hub:cache:';
@@ -122,9 +141,18 @@ export function buildProxyUrl(targetUrl: string): string {
   return `${base}/?url=${encodeURIComponent(trimmedTargetUrl)}`;
 }
 
+/**
+ * Fetch text with a fresh-for-`ttlMs` cache (memory + localStorage).
+ *
+ * Caching policy is *stale-if-error*, not stale-while-revalidate: a fresh entry
+ * is returned without a request; otherwise the network is tried, and only if
+ * that fails (or times out) is the expired entry returned, with `stale: true`.
+ * Widgets should treat `stale: true` as a failed refresh that still has
+ * last-good data to show.
+ */
 export async function fetchTextWithCache(
   url: string,
-  { cacheKey, ttlMs = 60_000, allowStale = true, fetchInit }: FetchCacheOptions = {}
+  { cacheKey, ttlMs = 60_000, allowStale = true, fetchInit, timeoutMs = DEFAULT_FETCH_TIMEOUT_MS }: FetchCacheOptions = {}
 ): Promise<{ text: string; fromCache: boolean; stale: boolean }> {
   const key = cacheKey ?? buildCacheKey('text', url);
   const cached = getCacheEntry(key);
@@ -133,7 +161,7 @@ export async function fetchTextWithCache(
   }
 
   try {
-    const response = await fetch(url, fetchInit);
+    const response = await fetch(url, withTimeout(fetchInit, timeoutMs));
     if (!response.ok) throw new Error(`Failed to fetch ${url}`);
     const text = await response.text();
     setCacheEntry(key, text, ttlMs);

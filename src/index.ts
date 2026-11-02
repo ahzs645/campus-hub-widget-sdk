@@ -2,6 +2,7 @@
 export {
   defineWidget,
   registerWidgetModule,
+  type RegisterWidgetModuleOptions,
   getWidgetManifest,
   getAllWidgetManifests,
   getWidgetOptionsLoader,
@@ -196,7 +197,7 @@ export { useTextResize } from './hooks/useTextResize';
 export { useLoopingAutoScroll } from './hooks/useLoopingAutoScroll';
 export { useTransitionSettled } from './hooks/useTransitionSettled';
 export { useWakeLock } from './hooks/useWakeLock';
-export { useEvents, formatDate, formatTime, type CalendarEvent, type UseEventsOptions } from './hooks/useEvents';
+export { useEvents, useEventsState, formatDate, formatTime, type CalendarEvent, type EventsState, type UseEventsOptions } from './hooks/useEvents';
 
 // === Icon Names ===
 export type { IconName } from './lib/icon-names';
@@ -276,6 +277,9 @@ export {
 // package can typecheck and build with only the SDK installed.
 export {
   createSignalingClient,
+  registerSignalingImplementation,
+  hasSignalingImplementation,
+  type SignalingClientFactory,
   type CreateSignalingClientOptions,
   type SignalingClient,
   type SignalingConfig,
