@@ -55,4 +55,11 @@ describe('validateRemoteWidgetManifest', () => {
     });
     expect(result.error).toMatch(/requires host runtime/);
   });
+
+  it('continues to accept runtime-1 widgets after adding the source and preview APIs', () => {
+    const result = validateRemoteWidgetManifest({ ...valid(), runtime: 1 });
+    expect(result.error).toBeUndefined();
+    expect(result.manifest?.runtime).toBe(1);
+  });
 });
+

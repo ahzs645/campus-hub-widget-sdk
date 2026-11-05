@@ -1,5 +1,6 @@
 'use client';
 import { createContext, useContext, type ReactNode } from 'react';
+import type { LinkedSource, SourceBinding } from './widget-registry';
 
 export type WidgetOptionsSurface = 'editor' | 'gallery';
 
@@ -143,6 +144,49 @@ export function useMediaPicker() {
   return useContext(MediaPickerContext);
 }
 
+// The host owns source storage, installation and permissions. Every widget,
+// including a remotely installed plugin, uses this bridge to the same source
+// library/store/create UI rather than implementing another source form.
+export interface SourcePickRequest {
+  widgetType: string;
+  bindings: SourceBinding[];
+  initialTab?: 'library' | 'store' | 'create';
+  /** Keep the host overlay inside an active native dialog's browser top layer. */
+  portalContainer?: HTMLElement;
+  /** Called only after the chosen source exists in the host's source library. */
+  onSelect: (source: LinkedSource) => void;
+}
+
+export type SourcePickerFn = (request: SourcePickRequest) => void;
+/** Host-specific eligibility, such as a source's workspace or access scope. */
+export type SourceDisabledReasonFn = (source: LinkedSource, binding: SourceBinding) => string | undefined;
+
+const SourcePickerContext = createContext<SourcePickerFn | null>(null);
+const SourceDisabledReasonContext = createContext<SourceDisabledReasonFn | null>(null);
+
+export function SourcePickerProvider({ value, getSourceDisabledReason, children }: {
+  value: SourcePickerFn | null;
+  getSourceDisabledReason?: SourceDisabledReasonFn;
+  children: ReactNode;
+}) {
+  const inheritedPolicy = useContext(SourceDisabledReasonContext);
+  return <SourcePickerContext.Provider value={value}>
+    <SourceDisabledReasonContext.Provider value={getSourceDisabledReason ?? inheritedPolicy}>
+      {children}
+    </SourceDisabledReasonContext.Provider>
+  </SourcePickerContext.Provider>;
+}
+
+/** Null in standalone hosts without a source library; existing URL options still work. */
+export function useSourcePicker() {
+  return useContext(SourcePickerContext);
+}
+
+/** The same host policy applies to inline source lists and shared modal picks. */
+export function useSourceDisabledReason() {
+  return useContext(SourceDisabledReasonContext);
+}
+
 // ── Nested widget editor bridge ──
 // Container widgets (the Widget Stack today) hold other widgets as props.
 // Their options UI should not have to re-implement the editor for each
@@ -218,3 +262,4 @@ export function shouldHideGalleryControl({
     pattern.test(normalizedLabel),
   );
 }
+
