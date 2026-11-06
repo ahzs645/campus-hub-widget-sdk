@@ -69,6 +69,8 @@ export interface LinkedSource {
   };
   /** Persisted/derived content-shape snapshot, when available. */
   capabilities?: SourceCapabilities;
+  /** Saved field mapping. Its presence means generic API readers can use the source. */
+  apiMapping?: unknown;
 }
 
 export interface SourceBinding {
@@ -78,6 +80,12 @@ export interface SourceBinding {
   propName: string;
   /** Accepted source types */
   types: SourceType[];
+  /**
+   * This link sits alongside the widget's other links (a track and its cover
+   * art) rather than replacing them. By default bindings are alternatives:
+   * choosing one switches the widget away from the previous binding.
+   */
+  independent?: boolean;
   /** Whether this prop accepts multiple sources (e.g. slideshow slides) */
   multiple?: boolean;
   /** URL field on each collection item when multiple is true. Defaults to 'url'. */

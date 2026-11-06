@@ -113,6 +113,22 @@ describe('source selection and unlink', () => {
     expect(data.apiUrl).toBe('https://old.example/data');
   });
 
+  it('keeps other links when a binding is declared independent', () => {
+    const audio: SourceBinding = { propName: 'audioUrl', types: ['video'], independent: true };
+    const cover: SourceBinding = { propName: 'coverUrl', types: ['image'], independent: true };
+    const track = { _id: 'track', name: 'Track', sourceType: 'video', url: 'https://example.edu/a.mp3' } as LinkedSource;
+    const art = { _id: 'art', name: 'Art', sourceType: 'image', url: 'https://example.edu/a.jpg' } as LinkedSource;
+    const linked = applySourceBinding(art, cover, applySourceBinding(track, audio, {}), audio);
+    expect(linked).toMatchObject({ audioUrl: track.url, coverUrl: art.url });
+    expect(getSourceReferences(linked).map((ref) => ref.sourceId)).toEqual(['track', 'art']);
+
+    // Re-linking the track replaces only that binding, whichever link is active.
+    const next = { _id: 'next', name: 'Next', sourceType: 'video', url: 'https://example.edu/b.mp3' } as LinkedSource;
+    const swapped = applySourceBinding(next, audio, linked, cover);
+    expect(swapped).toMatchObject({ audioUrl: next.url, coverUrl: art.url });
+    expect(getSourceReferences(swapped).map((ref) => ref.sourceId).sort()).toEqual(['art', 'next']);
+  });
+
   it('removes the copied URL and reference while applying the widget reset', () => {
     const binding: SourceBinding = {
       propName: 'feedUrl', types: ['feed'], removeSource: () => ({ mode: 'manual' }),

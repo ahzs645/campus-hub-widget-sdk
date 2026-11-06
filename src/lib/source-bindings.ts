@@ -192,9 +192,10 @@ export function applySourceBinding(
   const previousCollection = Boolean(previousRef?.itemId || previousBinding?.multiple);
   // A selection changes a scalar connection, but must never remove an image
   // just because the author is adding another image or switching feed modes.
-  let current = previousRef && !previousCollection
-    ? removeSourceBinding(data, previousBinding)
-    : { ...data };
+  // Alternative bindings replace each other; an independent one keeps its neighbours.
+  const replacesScalar = previousRef && !previousCollection &&
+    !binding.independent && !previousBinding?.independent;
+  let current = replacesScalar ? removeSourceBinding(data, previousBinding) : { ...data };
   // Linking a host-managed source must not retain a legacy direct endpoint
   // (which can include credentials) already stored under the same prop.
   if (binding.mode === 'reference' && !binding.multiple) delete current[binding.propName];
