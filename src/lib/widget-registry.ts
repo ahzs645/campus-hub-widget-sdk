@@ -51,6 +51,8 @@ export interface LinkedSource {
   /** Host-managed webhook ingestion; write credentials never enter widget props. */
   pushEnabled?: boolean;
   _id: string;
+  /** Host scope used by shared picker eligibility policies. Absent for legacy personal sources. */
+  workspaceId?: string;
   presetId?: string;
   name: string;
   url: string;
@@ -59,9 +61,16 @@ export interface LinkedSource {
   metadata?: {
     provider?: string;
     thumbnailUrl?: string;
+    /** Public companion endpoints supplied by the source catalogue. */
+    audioUrl?: string;
+    embedUrl?: string;
+    websiteUrl?: string;
+    realtimeUrl?: string;
   };
   /** Persisted/derived content-shape snapshot, when available. */
   capabilities?: SourceCapabilities;
+  /** Saved field mapping. Its presence means generic API readers can use the source. */
+  apiMapping?: unknown;
 }
 
 export interface SourceBinding {
@@ -71,8 +80,16 @@ export interface SourceBinding {
   propName: string;
   /** Accepted source types */
   types: SourceType[];
+  /**
+   * This link sits alongside the widget's other links (a track and its cover
+   * art) rather than replacing them. By default bindings are alternatives:
+   * choosing one switches the widget away from the previous binding.
+   */
+  independent?: boolean;
   /** Whether this prop accepts multiple sources (e.g. slideshow slides) */
   multiple?: boolean;
+  /** URL field on each collection item when multiple is true. Defaults to 'url'. */
+  itemUrlProp?: string;
   /**
    * Capabilities this binding needs from a source (e.g. `{ hasImages: true }`).
    * Sources that don't meet this are still shown in the picker, greyed with a
@@ -130,6 +147,8 @@ export interface WidgetManifestEntry {
   optionsSchema?: WidgetOptionsSchema;
   defaultProps?: Record<string, unknown>;
   createDefaultProps?: WidgetDefaultPropsFactory;
+  /** Local fake data / sample-mode overrides for network-free gallery and options previews. */
+  previewProps?: Record<string, unknown>;
   /** Source types this widget can consume. Omit = no source picker shown. */
   acceptsSources?: SourceBinding[];
 }
@@ -197,6 +216,8 @@ export interface WidgetDefinition {
   optionsSchema?: WidgetOptionsSchema;
   defaultProps?: Record<string, unknown>;
   createDefaultProps?: WidgetDefaultPropsFactory;
+  /** Local fake data / sample-mode overrides for network-free gallery and options previews. */
+  previewProps?: Record<string, unknown>;
   /** Source types this widget can consume. Omit = no source picker shown. */
   acceptsSources?: SourceBinding[];
 }
@@ -412,3 +433,4 @@ export function getWidgetRegistrationKind(type: string): 'eager' | 'lazy' | unde
   if (!manifestRegistry.has(type)) return undefined;
   return eagerComponents.has(type) ? 'eager' : 'lazy';
 }
+

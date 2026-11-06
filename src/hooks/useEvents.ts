@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { buildCacheKey, buildProxyUrl, fetchJsonWithCache, fetchTextWithCache } from '../lib/data-cache';
 import { parseICal, parseRss } from '../lib/feeds';
+import { useWidgetPreview } from '../lib/widget-preview';
 
 export interface CalendarEvent {
   id: string | number;
@@ -215,8 +216,9 @@ interface LiveEvents {
  *   Render the shared SourceUnavailable state.
  */
 export function useEventsState(options: UseEventsOptions): EventsState {
+  const preview = useWidgetPreview();
   const {
-    apiUrl,
+    apiUrl: configuredApiUrl,
     sourceType = 'json',
     cacheTtlSeconds = 300,
     maxItems = 10,
@@ -225,6 +227,7 @@ export function useEventsState(options: UseEventsOptions): EventsState {
     selectedCategories,
     useCorsProxy = true,
   } = options;
+  const apiUrl = preview ? undefined : configuredApiUrl;
 
   const [live, setLive] = useState<LiveEvents | null>(null);
   const [errorState, setErrorState] = useState<{ sourceKey: string; message: string } | null>(null);
@@ -304,3 +307,4 @@ export function useEventsState(options: UseEventsOptions): EventsState {
 export function useEvents(options: UseEventsOptions): CalendarEvent[] {
   return useEventsState(options).events;
 }
+

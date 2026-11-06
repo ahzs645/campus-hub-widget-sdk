@@ -337,6 +337,9 @@ export async function loadCafeteriaSource(
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);
+  if (!options.menuUrl.trim() && locationIds.length === 0) {
+    throw new Error('Choose a cafeteria source before loading its menu.');
+  }
   if (locationIds.length > 0) {
     const menus: ParsedCafeteriaMenu[] = [];
     for (const locationId of locationIds) {
@@ -401,3 +404,4 @@ export async function loadCafeteriaSource(
   });
   return normalizeCafeteriaPayload(text);
 }
+

@@ -66,6 +66,12 @@ bundle — see `remote-widget-manifest.ts` for the exact contract and its
 version. It also pins `process.env.NODE_ENV` to production: the host shares its
 production React, so a dev-mode bundle (which calls `jsxDEV`) cannot run.
 
+Runtime 2 adds the shared Sources picker and sample-preview APIs documented in
+[authoring-widgets.md](./authoring-widgets.md). New bundles declare runtime 2
+automatically; older hosts reject them with an upgrade message instead of
+loading a bundle whose SDK imports are missing. Runtime-1 bundles remain
+compatible with the updated host.
+
 Dependency placement changes from the package contract: with no host installer
 in the picture, *everything* your widget uses beyond react and the SDK gets
 **bundled into widget.js**. Declare react, react-dom and the SDK as
@@ -136,7 +142,7 @@ import * as reactDom from 'react-dom';
 import * as sdk from '@firstform/campus-hub-widget-sdk';
 
 (globalThis as Record<string, unknown>).CampusHubWidgetRuntime =
-  { version: 1, react, jsxRuntime, reactDom, sdk };
+  { version: sdk.REMOTE_WIDGET_RUNTIME_VERSION, react, jsxRuntime, reactDom, sdk };
 new Function(readFileSync('dist/widget.js', 'utf8'))();
 
 expect(sdk.getWidgetManifest('authorclock')).toBeDefined();
@@ -155,3 +161,4 @@ does exactly this and is the working reference for the whole setup.
 - [ ] Bundle test proves registration through the runtime global
 - [ ] Release workflow publishes `widget.js` + `manifest.json` on tags
 - [ ] No network calls without a timeout; displays run unattended for months
+

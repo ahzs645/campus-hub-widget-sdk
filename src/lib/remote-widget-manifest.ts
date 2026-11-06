@@ -30,7 +30,10 @@ export const REMOTE_WIDGET_FORMAT_VERSION = 1;
  * declares the version it was built against in `runtime`; a host refuses
  * bundles built against a newer contract than it provides.
  */
-export const REMOTE_WIDGET_RUNTIME_VERSION = 1;
+// Runtime 2 adds the shared source-picker bridge and sample-preview contract.
+// Older bundles continue to run; a bundle using the new APIs must not install
+// into a runtime-1 host where those SDK exports do not exist.
+export const REMOTE_WIDGET_RUNTIME_VERSION = 2;
 
 /**
  * Name of the window global the host installs before loading a bundle. Holds
@@ -152,3 +155,4 @@ export function validateRemoteWidgetManifest(
     },
   };
 }
+

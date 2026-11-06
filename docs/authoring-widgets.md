@@ -88,6 +88,84 @@ reports `stale: true` when it served an expired entry after a failed request.
 
 ---
 
+## Shared Sources workflow
+
+Live provider endpoints belong in the host's **Sources** library and source
+store. A widget's `defaultProps`, component defaults and gallery presets must
+contain only presentation settings and local sample data. Do not silently
+choose a real campus, feed, station, API key or location that starts requests.
+
+Declare `acceptsSources` in the manifest. The editor shows saved compatible
+sources even when the list is empty, with **Browse source store** and **Add
+source** actions supplied by the host. The same flow is available inside
+container widgets such as Widget Stack. `matchSource` narrows a provider-specific
+adapter; `requires` describes known content requirements. A source whose known
+capabilities do not meet a requirement cannot be linked. A source that has not
+been probed yet can be selected and assessed normally.
+
+```ts
+acceptsSources: [{
+  propName: 'feedUrl',
+  types: ['feed', 'api'],
+  requires: { hasImages: true },
+  applySource: (source) => ({ feedUrl: source.url, mode: 'feed' }),
+  removeSource: () => ({ mode: 'sample' }),
+}]
+```
+
+The host wraps the editor in `SourcePickerProvider value={openSourcePicker}`.
+Its callback receives a `SourcePickRequest` with `widgetType`, `bindings`, an
+optional `initialTab` (`library`, `store`, or `create`) and `onSelect`. It opens
+the shared Sources interface and calls `onSelect(savedSource)` only after the
+source is saved or imported. Cancelling calls no selection callback and keeps
+the widget draft intact. The host continues to enforce normal workspace and
+source permissions. Plugins can use `useSourcePicker()` when they need to open
+this same interface from their own options; it returns `null` in a standalone
+host that has no source library.
+
+Use `matchSourceToBindings`, `applySourceBinding` and `removeSourceBinding` in
+host surfaces so compatibility and linking follow one contract. Unlinking
+removes both the saved reference and its copied endpoint, then applies the
+widget's optional `removeSource` reset. Switching sources retains unrelated
+presentation settings and runs the selected binding's `applySource` mapping.
+Existing explicitly configured URLs continue to work; selecting a saved source
+is what converts that widget to a managed source link.
+
+For a collection, set `multiple: true` and `itemUrlProp` (default `url`). A
+custom `applySource` must upsert an item with `id: source._id` into its array;
+the default mapping produces `{ id, url }` items. The editor stores every
+managed item in `__sourceRefs: [{ sourceId, propName, itemId, urlProp }]`, with
+`__sourceRef` retained as the active/latest alias. This lets a source URL change
+update one slide or poster after reordering. `getSourceReferences` reads both
+forms and ignores references to removed items. Unlinking one source removes
+only its managed item and keeps other saved sources and manually authored
+items. Collection options editors must preserve each item's stable `id`.
+
+## Sample previews
+
+Options and gallery previews show local fake data. The engine calls
+`buildWidgetPreviewProps(manifest, data)` and wraps the widget in
+`WidgetPreviewProvider`. The helper preserves presentation settings, removes
+saved source references, binding inputs and remote URLs, and recursively
+handles child widget configurations. It does not mutate the saved widget.
+Optional manifest `previewProps` can supply fake records or select a sample
+mode; keep all sample images inline or bundled locally.
+
+Widgets that construct requests from non-URL settings must also use
+`useWidgetPreview()` to skip polling, media playback, subscriptions and other
+connections. For example, a weather widget must not construct a live URL from
+coordinates while in sample mode. `useEventsState` already respects this
+context. Normal display rendering and the configured editor canvas keep using
+their selected sources. A failed configured source still shows last-good data
+or an unavailable state, never invented measurements.
+
+These preview helpers do not sandbox arbitrary plugin code. Plugins are
+responsible for making their sample path free of network requests. External
+embed/audio/video widgets use the engine's static preview card until they have
+an explicit local sample representation.
+
+---
+
 ## Host-managed source references
 
 For a widget that reads normalized data from the host, an `acceptsSources`
@@ -204,3 +282,7 @@ package is empty.
 - [ ] Renders correctly at its `minW`/`minH` — boards are laid out on a 12×8 grid
 - [ ] No network calls without a timeout; displays run unattended for months
 - [ ] Demo data only when unconfigured, with a Demo badge; a configured source that fails shows last-good data or `SourceUnavailable`
+- [ ] Live endpoints are saved sources, never widget defaults or sample presets
+- [ ] `acceptsSources` describes every supported source input; provider mappings and unlink resets are declared together
+- [ ] Sample previews skip requests, media playback and subscriptions, including nested children
+

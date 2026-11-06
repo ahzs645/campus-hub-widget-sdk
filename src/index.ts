@@ -34,14 +34,37 @@ export {
   shouldHideGalleryControl,
   MediaPickerProvider,
   useMediaPicker,
+  SourcePickerProvider,
+  useSourcePicker,
+  useSourceDisabledReason,
   NestedWidgetEditorProvider,
   useNestedWidgetEditor,
   type WidgetOptionsSurface,
   type GalleryControlMetadata,
   type MediaPickRequest,
+  type SourcePickRequest,
+  type SourcePickerFn,
+  type SourceDisabledReasonFn,
   type NestedWidgetEditRequest,
   type NestedWidgetEditorFn,
 } from './lib/widget-options-surface';
+
+export {
+  getSourceReference,
+  getSourceReferences,
+  matchSourceToBindings,
+  applySourceBinding,
+  removeSourceBinding,
+  detachChangedSourceReferences,
+  type SourceReference,
+  type SourceBindingMatch,
+} from './lib/source-bindings';
+
+export {
+  WidgetPreviewProvider,
+  useWidgetPreview,
+  buildWidgetPreviewProps,
+} from './lib/widget-preview';
 
 // === Data Utilities ===
 export {
@@ -286,3 +309,4 @@ export {
   type SignalingEventCallback,
   type SignalingRole,
 } from './lib/signaling';
+
